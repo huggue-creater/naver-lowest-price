@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>H몰 상품 네이버 최저가 비교기</title>
+  <style>
+    :root {
+      --green: #03C75A;
+      --red: #e5391c;
+      --orange: #ff6b00;
+      --blue: #0068c8;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --border: #e0e4e9;
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 60px;
+    }
+    .header {
+      background: linear-gradient(135deg, #0068c8 0%, #004fa3 100%);
+      color: white;
+      padding: 30px 20px 26px;
+      text-align: center;
+    }
+    .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { font-size: 13px; margin-top: 7px; opacity: 0.85; line-height: 1.6; }
+    .header .step-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    .step-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+    .step-arrow { opacity: 0.6; }
+    .container { max-width: 860px; margin: 0 auto; padding: 22px 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    details summary {
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: '▶'; font-size: 10px; transition: transform 0.2s; }
+    details[open] summary::before { transform: rotate(90deg); }
+    details .inner { margin-top: 14px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      outline: none;
+      color: var(--text);
+      transition: border-color 0.18s;
+      background: #fafbfc;
+    }
+    input:focus, textarea:focus { border-color: var(--green); background: white; }
+    .input-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+    textarea#productInput {
+      height: 130px;
+      resize: vertical;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+    .hint code {
+      background: #f0f2f5;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #333;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 14px;
+      transition: opacity 0.18s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .info-banner {
+      background: #f0f7ff;
+      border: 1px solid #b3d4ff;
+      border-radius: 9px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #1a4d8f;
+      margin-bottom: 14px;
+      line-height: 1.7;
+    }
+    .info-banner a { color: var(--blue); font-weight: 600; }
+
+    /* 결과 카드 */
+    .result-card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+    /* 결과 헤더 - H몰 상품 정보 */
+    .result-hmall-header {
+      background: linear-gradient(135deg, #f5f8ff 0%, #eef3ff 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .hmall-logo {
+      background: #0068c8;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .hmall-product-info { flex: 1; min-width: 0; }
+    .hmall-product-name {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 5px;
+      word-break: break-all;
+    }
+    .hmall-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .code-tag {
+      font-size: 11px;
+      color: var(--muted);
+      background: #eef0f4;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-family: monospace;
+    }
+    .hmall-link {
+      font-size: 12px;
+      color: var(--blue);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .hmall-link:hover { text-decoration: underline; }
+    .hmall-user-price {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .hmall-price-label { font-size: 11px; color: var(--muted); }
+    .hmall-price-value { font-size: 20px; font-weight: 800; color: var(--text); }
+
+    /* 결과 바디 */
+    .result-body { padding: 18px 20px; }
+
+    /* 최저가 비교 요약 */
+    .compare-summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      flex-wrap: wrap;
+    }
+    .compare-summary.is-lowest {
+      background: #f0fff7;
+      border: 1.5px solid #a8e6c4;
+    }
+    .compare-summary.not-lowest {
+      background: #fff5f0;
+      border: 1.5px solid #ffc5a5;
+    }
+    .badge-lowest {
+      background: var(--red);
+      color: white;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 5px 14px;
+      border-radius: 7px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .badge-not-lowest {
+      background: var(--orange);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 7px;
+      flex-shrink: 0;
+    }
+    .compare-detail { font-size: 13px; line-height: 1.6; }
+    .compare-detail strong { font-size: 15px; }
+    .compare-detail .naver-lowest-price { color: var(--green); font-weight: 800; }
+    .compare-detail .price-gap { color: var(--orange); font-weight: 700; }
+
+    /* TOP 3 리스트 */
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .naver-icon {
+      background: #03C75A;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .product-list { display: flex; flex-direction: column; gap: 7px; }
+    .product-item {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      transition: background 0.12s;
+    }
+    .product-item:hover { background: #fafbff; }
+    .product-item.rank-1 { border-color: var(--green); background: #f0fff7; }
+    .rank-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .rank-badge.r1 { background: var(--green); color: white; }
+    .rank-badge.r2 { background: #9ca3af; color: white; }
+    .rank-badge.r3 { background: #c97d30; color: white; }
+    .product-info { flex: 1; min-width: 0; }
+    .product-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-name a { color: var(--text); text-decoration: none; }
+    .product-name a:hover { color: var(--green); text-decoration: underline; }
+    .mall-name { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .item-price-col { text-align: right; flex-shrink: 0; }
+    .item-price { font-size: 16px; font-weight: 800; }
+    .item-ship { font-size: 11px; margin-top: 1px; color: var(--muted); }
+    .item-ship.free { color: var(--green); font-weight: 700; }
+    .item-total { font-size: 11px; color: #555; margin-top: 1px; }
+
+    /* 하단 네이버 링크 */
+    .naver-catalog-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--green);
+      text-decoration: none;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    .naver-catalog-link:hover { text-decoration: underline; }
+
+    /* 경고/데모 노트 */
+    .warn-note {
+      background: #fffbe6;
+      border: 1px solid #ffe58f;
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: #7a5c00;
+      margin-bottom: 12px;
+    }
+    .error-box {
+      padding: 18px 20px;
+      background: #fff0f0;
+      color: var(--red);
+      font-size: 14px;
+    }
+
+    /* 로딩 */
+    .loading-wrap { text-align: center; padding: 40px 20px; }
+    .spinner {
+      width: 34px; height: 34px;
+      border: 4px solid #e0e4e9;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-status { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+    @media (max-width: 560px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .result-hmall-header { flex-direction: column; gap: 10px; }
+      .hmall-user-price { text-align: left; }
+      .header .step-row { flex-direction: column; gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>H몰 × 네이버 최저가 비교기</h1>
+  <p>H몰 상품코드 입력 → 상품명 자동 조회 → 네이버 최저가 비교</p>
+  <div class="step-row">
+    <span class="step-badge">① H몰 상품코드 입력</span>
+    <span class="step-arrow">→</span>
+    <span class="step-badge">② H몰 상품명 자동 추출</span>
+    <span class="step-arrow">→</span>
+    <span class="step-badge">③ 네이버 최저가 비교</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 상품 입력 -->
+  <div class="card">
+    <div class="card-title">🛍️ H몰 상품코드 + 가격 입력</div>
+    <textarea id="productInput" placeholder="H몰 상품코드와 가격을 한 줄씩 입력&#10;&#10;예시:&#10;2249534265 36310&#10;2249534265 36310 LG전자 그램 노트북  ← 상품명 직접 지정도 가능"></textarea>
+    <div class="hint">
+      기본: <code>H몰상품코드 가격</code> — H몰에서 상품명 자동 추출 후 네이버 검색<br>
+      직접: <code>H몰상품코드 가격 상품명</code> — H몰 조회 없이 입력한 상품명으로 바로 검색 (H몰 차단 시 사용)<br>
+      H몰 상품코드: URL에서 <code>slitmCd=</code> 뒤 숫자 → <code>hmall.com/…&amp;slitmCd=<strong>2249534265</strong></code>
+    </div>
+    <button class="btn-primary" id="searchBtn" onclick="startSearch()">최저가 비교 시작</button>
+  </div>
+
+  <!-- 결과 -->
+  <div id="results"></div>
+</div>
+
+<script>
+// ── 로컬 서버 감지 ────────────────────────────────────────
+const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const LOCAL    = 'http://localhost:3000';
+
+// ── 유틸 ─────────────────────────────────────────────────
+function fmt(n) { return Number(n).toLocaleString('ko-KR') + '원'; }
+function stripHtml(s) { return s.replace(/<[^>]*>/g, ''); }
+
+async function safeFetch(url, opts = {}, timeoutMs = 12000) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const r  = await fetch(url, { ...opts, signal: ctrl.signal });
+    clearTimeout(t);
+    if (r.ok) return r;
+    console.warn('[fetch]', url.substring(0,80), r.status);
+  } catch (e) { console.warn('[fetch err]', e.message); }
+  return null;
+}
+
+// ── H몰 상품명 추출 ──────────────────────────────────────
+async function fetchHmallName(code) {
+  if (!IS_LOCAL) return null;
+  const r = await safeFetch(`${LOCAL}/hmall?code=${code}`);
+  if (!r) return null;
+
+  const ct = r.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    // 서버가 JSON {name} 형태로 반환
+    try { const j = await r.json(); return j.name || null; }
+    catch(_) { return null; }
+  }
+  // 서버가 원본 HTML 전달한 경우 클라이언트에서 재파싱
+  const html = await r.text();
+  return extractTitleFromHtml(html);
+}
+
+function extractTitleFromHtml(html) {
+  const og = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']{4,})["']/i)
+          ?? html.match(/<meta[^>]+content=["']([^"']{4,})["'][^>]+property=["']og:title["']/i);
+  if (og) { const t = cleanTitle(og[1]); if (t.length > 3) return t; }
+
+  const title = html.match(/<title>([^<]{4,})<\/title>/i);
+  if (title) { const t = cleanTitle(title[1]); if (t.length > 3) return t; }
+
+  const jld = html.match(/"name"\s*:\s*"([^"]{5,})"/);
+  if (jld) { const t = cleanTitle(jld[1]); if (t.length > 3) return t; }
+  return null;
+}
+
+function cleanTitle(raw) {
+  return raw
+    .replace(/\s*[|｜\-–]\s*(H몰|현대H몰|Hmall|HMALL|hmall|현대백화점).*$/i, '')
+    .replace(/^\s*(H몰|현대H몰|Hmall|HMALL|현대백화점)\s*[|｜\-–]\s*/i, '')
+    .replace(/\s*[:|：]\s*(H몰|현대H몰|Hmall).*$/i, '')
+    .trim();
+}
+
+// ── 네이버 API ────────────────────────────────────────────
+async function fetchNaverItems(query) {
+  if (!IS_LOCAL) return [];
+  const r = await safeFetch(`${LOCAL}/naver?query=${encodeURIComponent(query)}`);
+  if (!r) return [];
+  try {
+    const data = await r.json();
+    return (data.items ?? []).map(i => ({
+      title: i.title, link: i.link,
+      lprice: i.lprice, mallName: i.mallName,
+      deliveryFee: (i.deliveryFee !== undefined && i.deliveryFee !== null) ? Number(i.deliveryFee) : null,
+    })).filter(i => Number(i.lprice) > 0);
+  } catch (_) { return []; }
+}
+
+// ── 전체 조회 ─────────────────────────────────────────────
+async function searchOne(code, price, onStatus) {
+  if (!IS_LOCAL) {
+    return { productName: null, items: [], searchQuery: null, notLocal: true };
+  }
+
+  onStatus('H몰 상품 정보 조회 중…');
+  const productName = await fetchHmallName(code);
+  const searchQuery = productName;
+
+  onStatus('네이버 최저가 검색 중…');
+  const items = searchQuery ? await fetchNaverItems(searchQuery) : [];
+
+  return { productName, items, searchQuery };
+}
+
+// ── 결과 렌더링 ──────────────────────────────────────────
+function renderResult(code, price, r) {
+  const { productName, nameSource, items, searchQuery } = r;
+  const hmallUrl  = `https://www.hmall.com/md/pda/itemPtc?slitmCd=${code}`;
+  const naverUrl  = `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(searchQuery ?? code)}&sort=price`;
+
+  // H몰 헤더
+  const header = `
+    <div class="result-hmall-header">
+      <span class="hmall-logo">H몰</span>
+      <div class="hmall-product-info">
+        <div class="hmall-product-name">${productName ?? '상품명 조회 실패'}</div>
+        <div class="hmall-meta">
+          <span class="code-tag"># ${code}</span>
+          <a class="hmall-link" href="${hmallUrl}" target="_blank" rel="noopener">↗ H몰에서 보기</a>
+          ${nameSource ? `<span style="font-size:11px;color:#bbb;">(${nameSource})</span>` : ''}
+        </div>
+      </div>
+      <div class="hmall-user-price">
+        <div class="hmall-price-label">H몰 판매가</div>
+        <div class="hmall-price-value">${fmt(price)}</div>
+      </div>
+    </div>`;
+
+  // 로컬 서버 미실행 안내
+  if (r.notLocal) {
+    return `
+      <div class="result-card">
+        ${header}
+        <div class="result-body">
+          <div class="warn-note" style="background:#fff0f0;border-color:#ffc5c5;color:#8b0000;line-height:1.8;">
+            ❌ <strong>로컬 서버가 실행되지 않았습니다.</strong><br>
+            <code style="background:#f5f5f5;padding:2px 7px;border-radius:4px;font-size:13px;">최저가검색기_시작.bat</code> 파일을 더블클릭해서 서버를 먼저 실행해주세요.
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // 조회 실패 카드
+  if (!items.length) {
+    return `
+      <div class="result-card">
+        ${header}
+        <div class="result-body">
+          <div class="warn-note" style="background:#fff8e1;border-color:#ffe082;color:#6d4c00;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span>⚠️ 네이버 가격 자동 조회 실패</span>
+            <a href="${naverUrl}" target="_blank" rel="noopener"
+               style="background:#03C75A;color:white;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
+              N 네이버에서 직접 확인 →
+            </a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // 성공 카드
+  const sorted = items
+    .map(i => ({ ...i, total: Number(i.lprice) + (i.deliveryFee != null ? Number(i.deliveryFee) : 0) }))
+    .sort((a, b) => a.total - b.total)
+    .slice(0, 3);
+
+  const naverLowest = sorted[0].total;
+  const isLowest    = price <= naverLowest;
+  const priceDiff   = price - naverLowest;
+
+  const summaryHtml = isLowest
+    ? `<div class="compare-summary is-lowest">
+        <span class="badge-lowest">최저가</span>
+        <div class="compare-detail">
+          H몰 가격 <strong>${fmt(price)}</strong>은 네이버 최저가
+          <span class="naver-lowest-price">${fmt(naverLowest)}</span> 기준
+          <strong style="color:var(--green);">최저가입니다!</strong>
+          ${sorted[0].deliveryFee != null ? `(배송비 ${sorted[0].deliveryFee === 0 ? '무료' : fmt(sorted[0].deliveryFee)} 포함)` : ''}
+        </div>
+      </div>`
+    : `<div class="compare-summary not-lowest">
+        <span class="badge-not-lowest">최저가 아님</span>
+        <div class="compare-detail">
+          H몰 가격 <strong>${fmt(price)}</strong>은 네이버 최저가
+          <span class="naver-lowest-price">${fmt(naverLowest)}</span>보다
+          <span class="price-gap">+${fmt(Math.abs(priceDiff))}</span> 비쌉니다.
+          ${sorted[0].deliveryFee != null ? '(배송비 포함 기준)' : ''}
+        </div>
+      </div>`;
+
+  const itemsHtml = sorted.map((item, i) => {
+    const rankClass = ['r1','r2','r3'][i];
+    const shipHtml  = item.deliveryFee != null
+      ? (item.deliveryFee === 0 ? `<div class="item-ship free">무료배송</div>` : `<div class="item-ship">배송비 ${fmt(item.deliveryFee)}</div>`)
+      : `<div class="item-ship">배송비 별도확인</div>`;
+    const totalHtml = item.deliveryFee != null ? `<div class="item-total">합계 ${fmt(item.total)}</div>` : '';
+    return `
+      <div class="product-item ${i === 0 ? 'rank-1' : ''}">
+        <div class="rank-badge ${rankClass}">${i+1}</div>
+        <div class="product-info">
+          <div class="product-name"><a href="${item.link}" target="_blank" rel="noopener">${stripHtml(item.title)}</a></div>
+          <div class="mall-name">${item.mallName}</div>
+        </div>
+        <div class="item-price-col">
+          <div class="item-price">${fmt(item.lprice)}</div>
+          ${shipHtml}${totalHtml}
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="result-card">
+      ${header}
+      <div class="result-body">
+        ${summaryHtml}
+        <div class="section-label"><span class="naver-icon">N</span> 네이버 최저가 근접 상품 TOP 3</div>
+        <div class="product-list">${itemsHtml}</div>
+        <a class="naver-catalog-link" href="${naverUrl}" target="_blank" rel="noopener">
+          ↗ 네이버에서 전체 최저가 목록 확인
+        </a>
+      </div>
+    </div>`;
+}
+
+// ── 메인 ─────────────────────────────────────────────────
+async function startSearch() {
+  const raw = document.getElementById('productInput').value.trim();
+  if (!raw) { alert('H몰 상품코드와 가격을 입력해주세요.'); return; }
+
+  const products = [];
+  for (const line of raw.split('\n')) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 2) continue;
+    const code  = parts[0].replace(/[^0-9a-zA-Z_-]/g, '');
+    const price = parseInt(parts[1].replace(/[^0-9]/g, ''), 10);
+    if (!code || isNaN(price) || price <= 0) continue;
+    products.push({ code, price });
+  }
+  if (!products.length) { alert('형식을 확인해주세요.\n예시: 2249534265 36310'); return; }
+
+  const btn       = document.getElementById('searchBtn');
+  const resultsEl = document.getElementById('results');
+  btn.disabled    = true;
+
+  const statusDiv = document.createElement('div');
+  statusDiv.className = 'loading-wrap';
+  statusDiv.innerHTML = '<div class="spinner"></div><div class="loading-status">준비 중…</div>';
+  resultsEl.innerHTML = '';
+  resultsEl.appendChild(statusDiv);
+  const setStatus = msg => { const s = statusDiv.querySelector('.loading-status'); if (s) s.textContent = msg; };
+
+  const parts = [];
+  let done = 0;
+  for (const { code, price } of products) {
+    try {
+      const result = await searchOne(code, price, msg => setStatus(`[${done+1}/${products.length}] ${msg}`));
+      parts.push(renderResult(code, price, result));
+    } catch (e) {
+      console.error('[오류]', code, e);
+      parts.push(`<div class="result-card"><div class="error-box">❌ [${code}] ${e.message}</div></div>`);
+    }
+    done++;
+  }
+
+  resultsEl.innerHTML = parts.join('');
+  btn.disabled        = false;
+  btn.textContent     = '최저가 비교 시작';
+}
+</script>
+</body>
+</html>
