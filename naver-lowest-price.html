@@ -242,7 +242,7 @@
     .compare-detail .naver-lowest-price { color: var(--green); font-weight: 800; }
     .compare-detail .price-gap { color: var(--orange); font-weight: 700; }
 
-    /* TOP 3 리스트 */
+    /* TOP 5 리스트 */
     .section-label {
       font-size: 13px;
       font-weight: 700;
@@ -286,6 +286,8 @@
     .rank-badge.r1 { background: var(--green); color: white; }
     .rank-badge.r2 { background: #9ca3af; color: white; }
     .rank-badge.r3 { background: #c97d30; color: white; }
+    .rank-badge.r4 { background: #b8bcc4; color: white; }
+    .rank-badge.r5 { background: #b8bcc4; color: white; }
     .product-info { flex: 1; min-width: 0; }
     .product-name {
       font-size: 13px;
@@ -535,7 +537,7 @@ function renderResult(code, price, r) {
   const sorted = items
     .map(i => ({ ...i, total: Number(i.lprice) + (i.deliveryFee != null ? Number(i.deliveryFee) : 0) }))
     .sort((a, b) => a.total - b.total)
-    .slice(0, 3);
+    .slice(0, 5);
 
   const naverLowest = sorted[0].total;
   const isLowest    = price <= naverLowest;
@@ -562,7 +564,7 @@ function renderResult(code, price, r) {
       </div>`;
 
   const itemsHtml = sorted.map((item, i) => {
-    const rankClass = ['r1','r2','r3'][i];
+    const rankClass = ['r1','r2','r3','r4','r5'][i];
     const shipHtml  = item.deliveryFee != null
       ? (item.deliveryFee === 0 ? `<div class="item-ship free">무료배송</div>` : `<div class="item-ship">배송비 ${fmt(item.deliveryFee)}</div>`)
       : `<div class="item-ship">배송비 별도확인</div>`;
@@ -586,7 +588,7 @@ function renderResult(code, price, r) {
       ${header}
       <div class="result-body">
         ${summaryHtml}
-        <div class="section-label"><span class="naver-icon">N</span> 네이버 최저가 근접 상품 TOP 3</div>
+        <div class="section-label"><span class="naver-icon">N</span> 네이버 최저가 근접 상품 TOP 5</div>
         <div class="product-list">${itemsHtml}</div>
         <a class="naver-catalog-link" href="${naverUrl}" target="_blank" rel="noopener">
           ↗ 네이버에서 전체 최저가 목록 확인

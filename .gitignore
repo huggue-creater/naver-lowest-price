@@ -1,3 +1,4 @@
 .env
+corp-root-ca.pem
 node_modules/
 .claude/
