@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4060 인사이트 대시보드 — 현대홈쇼핑</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Gowun+Dodum&family=Jua&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════ 테마 변수 (버전 1/2/3) ═══════════ */
+  /* 버전 1 · 토스풍 미니멀: 화이트, 큰 라운드, 블루 포인트 */
+  body[data-theme="toss"] {
+    --bg:#f2f4f6; --card:#ffffff; --ink:#191f28; --sub:#8b95a1;
+    --accent:#3182f6; --accent-soft:#e8f3ff; --secondary:#6c5ce7; --tertiary:#00b894;
+    --up:#f04452; --down:#3182f6; --line:#e5e8eb; --hover:#f7f9fb;
+    --radius:20px; --btn-radius:14px; --chip-radius:999px;
+    --font:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif;
+    --font-head:var(--font); --font-num:var(--font);
+    --shadow:0 2px 8px rgba(25,31,40,.05);
+    --tint:linear-gradient(135deg,#eef5ff,#f3f0ff);
+    --chart-ink:#6b7684; --chart-grid:rgba(0,0,0,.06);
+  }
+  /* 버전 2 · 다크 네온: 개발자 대시보드 느낌 */
+  body[data-theme="dark"] {
+    --bg:#0d1117; --card:#151c28; --ink:#e6edf3; --sub:#8b98ab;
+    --accent:#22d3ee; --accent-soft:rgba(34,211,238,.13); --secondary:#a78bfa; --tertiary:#34d399;
+    --up:#ff6b6b; --down:#4dabf7; --line:#222c3d; --hover:#1a2333;
+    --radius:12px; --btn-radius:8px; --chip-radius:8px;
+    --font:'IBM Plex Sans KR',sans-serif;
+    --font-head:var(--font); --font-num:'JetBrains Mono',monospace;
+    --shadow:0 0 0 1px rgba(255,255,255,.03), 0 4px 16px rgba(0,0,0,.4);
+    --tint:linear-gradient(135deg,rgba(34,211,238,.08),rgba(167,139,250,.10));
+    --chart-ink:#8b98ab; --chart-grid:rgba(255,255,255,.07);
+  }
+  /* 버전 3 · 파스텔 감성: 부드럽고 아기자기한 톤 */
+  body[data-theme="pastel"] {
+    --bg:#fdf6f8; --card:#ffffff; --ink:#5c4a55; --sub:#b39aa8;
+    --accent:#ef7fa4; --accent-soft:#fdeaf1; --secondary:#8fb7e8; --tertiary:#a8d8b9;
+    --up:#e8708f; --down:#7ba7dc; --line:#f4dfe7; --hover:#fef3f7;
+    --radius:24px; --btn-radius:16px; --chip-radius:999px;
+    --font:'Gowun Dodum','Noto Sans KR',sans-serif;
+    --font-head:'Jua',sans-serif; --font-num:var(--font);
+    --shadow:0 4px 14px rgba(239,127,164,.09);
+    --tint:linear-gradient(135deg,#fdeef3,#eef4fd);
+    --chart-ink:#a08b97; --chart-grid:rgba(239,127,164,.10);
+  }
+
+  /* ═══════════ 공통 레이아웃 (모든 테마 공유) ═══════════ */
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); background:var(--bg); color:var(--ink); font-size:14px; transition:background .25s,color .25s; }
+  .wrap { max-width:1180px; margin:0 auto; padding:20px 16px 60px; }
+
+  header { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
+  header h1 { font-size:22px; letter-spacing:-.5px; font-family:var(--font-head); }
+  header h1 em { font-style:normal; color:var(--accent); }
+  .target-chip { background:var(--accent); color:#fff; border-radius:999px; padding:5px 14px; font-size:12.5px; font-weight:600; }
+  body[data-theme="dark"] .target-chip { color:#06202a; box-shadow:0 0 12px rgba(34,211,238,.4); }
+  .head-right { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .sub-note { color:var(--sub); font-size:12.5px; margin-bottom:18px; }
+
+  button { font-family:inherit; cursor:pointer; }
+  .btn { border:1px solid var(--line); background:var(--card); border-radius:var(--btn-radius); padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink); }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  body[data-theme="dark"] .btn.primary { color:#06202a; box-shadow:0 0 14px rgba(34,211,238,.35); }
+  .btn.primary:hover { opacity:.88; color:#fff; }
+  body[data-theme="dark"] .btn.primary:hover { color:#06202a; }
+
+  /* 테마 전환 세그먼트 */
+  .theme-seg { display:flex; border:1px solid var(--line); border-radius:var(--btn-radius); overflow:hidden; background:var(--card); }
+  .theme-seg button { border:none; background:none; padding:8px 12px; font-size:12px; font-weight:600; color:var(--sub); }
+  .theme-seg button.on { background:var(--accent); color:#fff; }
+  body[data-theme="dark"] .theme-seg button.on { color:#06202a; }
+
+  .banner { background:var(--tint); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:18px; display:none; }
+  .banner.show { display:block; }
+  .banner b { color:var(--accent); }
+  .banner ol { margin:8px 0 4px 20px; line-height:1.9; }
+  .banner code { background:var(--accent-soft); padding:1px 6px; border-radius:4px; font-size:12.5px; }
+  .banner a { color:var(--accent); }
+
+  .tabs { display:flex; gap:6px; margin-bottom:18px; border-bottom:2px solid var(--line); overflow-x:auto; }
+  .tab { border:none; background:none; padding:11px 18px; font-size:14.5px; font-weight:700; color:var(--sub); border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; font-family:var(--font-head); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  .panel { display:none; }
+  .panel.active { display:block; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:16px; box-shadow:var(--shadow); }
+  .card h2 { font-size:16px; margin-bottom:4px; font-family:var(--font-head); }
+  .card .desc { color:var(--sub); font-size:12.5px; margin-bottom:14px; line-height:1.6; }
+
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+  .chips .chips-label { color:var(--sub); font-size:12px; font-weight:600; margin-right:2px; }
+  .chip { border:1px solid var(--line); background:var(--card); border-radius:var(--chip-radius); padding:6px 13px; font-size:12.5px; font-weight:600; color:var(--sub); }
+  .chip.on { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:12px; color:var(--sub); font-weight:600; padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td { padding:10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr.kw-row { cursor:pointer; }
+  tr.kw-row:hover { background:var(--hover); }
+  .rank { font-weight:800; color:var(--accent); width:34px; font-size:15px; font-family:var(--font-num); }
+  .kw-name { font-weight:700; font-size:14.5px; }
+  .cat-tag { display:inline-block; background:var(--accent-soft); color:var(--accent); border-radius:5px; padding:2px 8px; font-size:11.5px; font-weight:600; margin-left:8px; }
+  .kw-type-tag { display:inline-block; border:1px solid var(--secondary); color:var(--secondary); border-radius:5px; padding:1px 7px; font-size:11px; font-weight:700; margin-left:5px; }
+  .growth { font-weight:800; font-size:14px; font-family:var(--font-num); }
+  .growth.up { color:var(--up); } .growth.down { color:var(--down); } .growth.flat { color:var(--sub); }
+  .spark { width:110px; height:30px; }
+
+  /* 타겟 적합도 셀 */
+  .fit-cell b { font-size:14.5px; font-family:var(--font-num); }
+  .type-badge { display:inline-block; border-radius:5px; padding:1.5px 7px; font-size:10.5px; font-weight:700; margin-left:6px; vertical-align:1px; }
+  .type-badge.core { background:var(--accent-soft); color:var(--accent); }
+  .type-badge.all  { background:var(--line); color:var(--sub); }
+  .type-badge.young{ background:transparent; border:1px dashed var(--line); color:var(--sub); }
+  .agebar { display:flex; height:7px; border-radius:4px; overflow:hidden; margin-top:5px; width:150px; background:var(--line); }
+  .agebar span { height:100%; }
+  .agebar-legend { font-size:10.5px; color:var(--sub); margin-top:3px; }
+  .agebar-legend i { display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 8px; vertical-align:-1px; }
+  .calc { color:var(--sub); font-size:12px; }
+
+  .insight-box { background:var(--tint); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:16px; }
+  .insight-box h2 { font-size:15px; margin-bottom:10px; font-family:var(--font-head); }
+  .insight-box li { margin:7px 0 7px 18px; line-height:1.65; }
+  .insight-box .tag { display:inline-block; border-radius:5px; padding:1px 8px; font-size:11.5px; font-weight:700; margin-right:6px; }
+  .tag.sale { background:rgba(240,68,82,.12); color:var(--up); }
+  .tag.mkt  { background:rgba(49,130,246,.12); color:var(--down); }
+  .tag.pgm  { background:var(--accent-soft); color:var(--accent); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:860px) { .grid2 { grid-template-columns:1fr; } }
+  .chart-box { position:relative; height:320px; }
+  .chart-box.sm { height:240px; }
+
+  .search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  input[type=text], select { font-family:inherit; font-size:14px; padding:9px 13px; border:1px solid var(--line); border-radius:var(--btn-radius); background:var(--card); color:var(--ink); }
+  input[type=text] { flex:1; min-width:240px; }
+  input[type=text]:focus { outline:none; border-color:var(--accent); }
+
+  .fit-score { text-align:center; padding:10px 0; }
+  .fit-score .num { font-size:42px; font-weight:800; color:var(--accent); font-family:var(--font-num); }
+  .fit-score .lbl { color:var(--sub); font-size:12.5px; margin-top:2px; }
+
+  .prod-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:12px; }
+  .prod { border:1px solid var(--line); border-radius:calc(var(--radius) * .6); overflow:hidden; background:var(--card); text-decoration:none; color:var(--ink); display:block; }
+  .prod:hover { border-color:var(--accent); }
+  .prod img { width:100%; height:130px; object-fit:cover; background:var(--hover); }
+  .prod .p-body { padding:9px 10px 11px; }
+  .prod .p-title { font-size:12px; line-height:1.45; height:35px; overflow:hidden; }
+  .prod .p-price { font-weight:800; font-size:13.5px; margin-top:5px; font-family:var(--font-num); }
+  .low-badge { display:inline-block; background:var(--accent-soft); color:var(--accent); border-radius:4px; font-size:10px; font-weight:700; padding:1px 6px; margin-left:4px; vertical-align:1px; }
+  .prod .p-mall { color:var(--sub); font-size:11px; margin-top:2px; }
+  .prod .p-mall .hmall { color:var(--accent); font-weight:700; }
+
+  .brand-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+  .brand-card { border:1px solid var(--line); border-radius:calc(var(--radius) * .6); padding:13px 15px; background:var(--card); }
+  .brand-card .b-name { font-weight:800; font-size:15px; }
+  .brand-card .b-meta { color:var(--sub); font-size:12px; margin-top:5px; line-height:1.6; }
+  .brand-card .b-kws { margin-top:6px; }
+  .brand-card .b-kws span { display:inline-block; background:var(--accent-soft); color:var(--accent); border-radius:4px; font-size:11px; padding:1px 7px; margin:2px 3px 0 0; font-weight:600; }
+
+  .loading { text-align:center; color:var(--sub); padding:40px 0; font-size:13.5px; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; vertical-align:-3px; margin-right:8px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .empty { color:var(--sub); padding:30px 0; text-align:center; }
+
+  .modal-bg { position:fixed; inset:0; background:rgba(10,10,14,.5); display:none; z-index:50; }
+  .modal-bg.show { display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto; }
+  .modal { background:var(--card); border-radius:var(--radius); max-width:860px; width:100%; padding:24px; position:relative; }
+  .modal .close { position:absolute; top:14px; right:16px; border:none; background:none; font-size:22px; color:var(--sub); }
+  .modal h2 { font-size:19px; margin-bottom:2px; }
+</style>
+</head>
+<body data-theme="toss">
+<div class="wrap">
+
+  <header>
+    <h1>📊 <em>4060</em> 인사이트 대시보드</h1>
+    <span class="target-chip">타겟: 40~60대 여성</span>
+    <div class="head-right">
+      <span id="statusBadge" style="font-size:12px;color:var(--sub)"></span>
+      <div class="theme-seg" id="themeSeg">
+        <button data-t="toss">① 미니멀</button>
+        <button data-t="dark">② 다크</button>
+        <button data-t="pastel">③ 파스텔</button>
+      </div>
+      <button class="btn" onclick="hardRefresh()">🔄 데이터 새로고침</button>
+    </div>
+  </header>
+  <div class="sub-note">네이버 데이터랩(검색어트렌드·쇼핑인사이트) + 쇼핑 검색 API 기반 · 트렌드 수치는 기간 내 상대지수(최대 100) · 적합도는 쇼핑 클릭 연령 구성 기준 · 데이터는 6시간 캐시</div>
+
+  <div class="banner" id="setupBanner">
+    <b>⚠️ 데이터랩 API 권한이 아직 등록되지 않았습니다.</b> 트렌드/랭킹 기능을 사용하려면 아래 절차로 권한을 추가하세요. (승인 대기 없이 즉시 적용)
+    <ol>
+      <li><a href="https://developers.naver.com/apps/#/list" target="_blank">네이버 개발자센터 → 내 애플리케이션</a> 접속 → 사용 중인 앱 선택</li>
+      <li><b>API 설정</b> 탭 → 사용 API에 <code>데이터랩 (검색어 트렌드)</code> 와 <code>데이터랩 (쇼핑인사이트)</code> 추가 후 저장</li>
+      <li>이 페이지에서 <b>🔄 데이터 새로고침</b> 클릭</li>
+    </ol>
+    ※ 권한 추가 전에도 [키워드 심층분석]의 관련 상품·브랜드 조회(쇼핑 검색 기반)는 사용할 수 있습니다.
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="pBest" onclick="switchTab(this)">🔥 베스트 키워드</button>
+    <button class="tab" data-panel="pSeason" onclick="switchTab(this)">🗓️ 시즌 선행</button>
+    <button class="tab" data-panel="pCat" onclick="switchTab(this)">📈 카테고리 트렌드</button>
+    <button class="tab" data-panel="pDeep" onclick="switchTab(this)">🔍 키워드 심층분석</button>
+    <button class="tab" data-panel="pBrand" onclick="switchTab(this)">🏷️ 브랜드/상품 추천</button>
+  </div>
+
+  <!-- ① 베스트 키워드 -->
+  <div class="panel active" id="pBest">
+    <div class="insight-box" id="insightBox" style="display:none">
+      <h2>💡 오늘의 액션 인사이트 <span style="font-weight:400;font-size:12px;color:var(--sub)">(최근 2주 모멘텀 기반 자동 생성)</span></h2>
+      <ul id="insightList"></ul>
+    </div>
+    <div class="card">
+      <h2>4060 여성 관심 상승 키워드 랭킹</h2>
+      <div class="desc"><b>🏠 전체</b>에서는 홈쇼핑 주력 큐레이션 키워드 풀(상품 80개 + 브랜드 64개)을, <b>카테고리를 선택하면 그 분류의 네이버 실제 인기 검색어 TOP 20(4060 여성 기준)</b>을 분석합니다. 하위 탐색으로 세부 분류(예: 화장품/미용 › 스킨케어)까지 내려갈 수 있습니다.
+        <b>타겟 적합도</b>는 해당 키워드 클릭자 중 40·50·60대 비중(%)입니다. 행을 클릭하면 상세 분석이 열립니다.</div>
+      <div class="chips" id="typeChips">
+        <span class="chips-label">키워드 유형</span>
+        <button class="chip on" data-t="all">전체</button>
+        <button class="chip" data-t="prod">📦 상품 키워드</button>
+        <button class="chip" data-t="brand">🏷️ 브랜드 키워드</button>
+      </div>
+      <div class="chips" id="bestCrumb"></div>
+      <div class="chips" id="bestChildChips"></div>
+      <div class="chips" id="sortChips">
+        <span class="chips-label">정렬</span>
+        <button class="chip on" data-s="momentum">🔥 상승 모멘텀</button>
+        <button class="chip" data-s="fit">🎯 4060 적합도</button>
+        <span class="chips-label" style="margin-left:10px">연령 비중 (복수 선택 = 합산 비중순)</span>
+        <button class="chip age" data-g="10">10대</button>
+        <button class="chip age" data-g="20">20대</button>
+        <button class="chip age" data-g="30">30대</button>
+        <button class="chip age" data-g="40">40대</button>
+        <button class="chip age" data-g="50">50대</button>
+        <button class="chip age" data-g="60">60대</button>
+      </div>
+      <div class="agebar-legend" id="ageLegend"></div>
+      <div id="bestBody" style="margin-top:8px"><div class="loading"><span class="spinner"></span>데이터랩 조회 중...</div></div>
+    </div>
+  </div>
+
+  <!-- ①-2 시즌 선행 분석 -->
+  <div class="panel" id="pSeason">
+    <div class="insight-box" id="seasonInsight" style="display:none">
+      <h2>📌 선제 편성 제안 <span style="font-weight:400;font-size:12px;color:var(--sub)">(전년 시즌 패턴 기반 자동 생성)</span></h2>
+      <ul id="seasonInsightList"></ul>
+    </div>
+    <div class="card">
+      <h2>시즌 선행 분석 — 전년 패턴으로 미리 잡는 편성</h2>
+      <div class="desc">최근 15개월(65주)의 클릭 지수를 <b>하나의 척도로</b> 조회해(4060 여성 필터), 두 가지를 계산합니다.<br>
+        ① <b>전년 동시즌 대비 올해</b>: 올해 최근 수치가 전년 같은 시점보다 얼마나 높은지(YoY)<br>
+        ② <b>전년 패턴 상승률</b>: 전년에 "지금 시점 → 리드타임 후 시점"으로 검색이 얼마나 늘었는지 — <b>이 값이 큰 키워드가 지금 소싱·조건협의를 시작해야 할 후보</b>입니다.<br>
+        미니차트: 전년 시즌 흐름이며 <b style="color:var(--accent)">●</b> 전년의 현재 시점, <b style="color:var(--up)">●</b> 리드타임 후 시점입니다. 행 클릭 시 심층분석.</div>
+      <div class="chips" id="seasonTypeChips">
+        <span class="chips-label">키워드 유형</span>
+        <button class="chip on" data-t="all">전체</button>
+        <button class="chip" data-t="prod">📦 상품 키워드</button>
+        <button class="chip" data-t="brand">🏷️ 브랜드 키워드</button>
+      </div>
+      <div class="chips" id="seasonCrumb"></div>
+      <div class="chips" id="seasonChildChips"></div>
+      <div class="chips" id="seasonSortChips">
+        <span class="chips-label">정렬</span>
+        <button class="chip on" data-s="lift">🗓️ 전년 패턴 상승률</button>
+        <button class="chip" data-s="fit">🎯 4060 적합도</button>
+        <span class="chips-label" style="margin-left:10px">연령 비중 (복수 선택 = 합산 비중순)</span>
+        <button class="chip age" data-g="10">10대</button>
+        <button class="chip age" data-g="20">20대</button>
+        <button class="chip age" data-g="30">30대</button>
+        <button class="chip age" data-g="40">40대</button>
+        <button class="chip age" data-g="50">50대</button>
+        <button class="chip age" data-g="60">60대</button>
+      </div>
+      <div class="chips">
+        <span class="chips-label">편성 리드타임</span>
+        <select id="leadSel" onchange="sState.lead=+this.value;renderSeason()">
+          <option value="1">1개월</option>
+          <option value="2" selected>2개월</option>
+          <option value="3">3개월</option>
+        </select>
+      </div>
+      <div class="agebar-legend" id="seasonAgeLegend"></div>
+      <div id="seasonBody"><div class="loading"><span class="spinner"></span>전년 데이터 조회 중...</div></div>
+    </div>
+  </div>
+
+  <!-- ② 카테고리 트렌드 -->
+  <div class="panel" id="pCat">
+    <div class="card">
+      <h2>카테고리 클릭 트렌드 (4060 여성)</h2>
+      <div class="desc">네이버 쇼핑 공식 분류 체계를 그대로 따라 내려갑니다. <b>하위 탐색 칩(›)</b>을 누르면 그 분류의 세부 카테고리 트렌드로 전환되고, 위치 경로를 누르면 상위로 돌아갑니다. 각 카테고리를 자체 최대값=100으로 지수화해 추세 비교가 가능하며, 범례 클릭으로 표시/숨김. 집계가 끝난 주(월~일)까지만 표시합니다.</div>
+      <div class="chips" id="catCrumb"></div>
+      <div class="chips" id="catChildChips"></div>
+      <div class="desc" id="catStatus" style="margin-bottom:6px"></div>
+      <div class="chart-box"><canvas id="catChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>카테고리 모멘텀 순위 <span style="font-weight:400;font-size:12px;color:var(--sub)">(최근 2주 vs 이전 8주)</span></h2>
+      <div class="chart-box sm"><canvas id="catGrowthChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ③ 키워드 심층분석 -->
+  <div class="panel" id="pDeep">
+    <div class="card">
+      <h2>키워드 심층분석</h2>
+      <div class="desc">키워드를 입력하면 ① 4060 여성 vs 전체 검색 트렌드 비교 ② 쇼핑 클릭 연령 구성(4060 적합도) ③ 관련 상품/브랜드를 분석합니다. 쉼표로 최대 3개 비교 가능.</div>
+      <div class="search-row">
+        <input type="text" id="deepInput" placeholder="예: 콜라겐, 린넨원피스, 안마의자" onkeydown="if(event.key==='Enter')runDeep()">
+        <select id="deepCat" onchange="onDeepCatChange(1)"></select>
+        <select id="deepCat2" onchange="onDeepCatChange(2)" style="display:none"></select>
+        <select id="deepCat3" style="display:none"></select>
+        <button class="btn primary" onclick="runDeep()">분석</button>
+      </div>
+      <div id="deepResult"><div class="empty">키워드를 입력해 주세요.</div></div>
+    </div>
+  </div>
+
+  <!-- ④ 브랜드/상품 추천 -->
+  <div class="panel" id="pBrand">
+    <div class="card">
+      <h2>상승 키워드 기반 브랜드/상품군 추천</h2>
+      <div class="desc">선택한 카테고리(세부 분류 가능)의 <b>네이버 인기 검색어(4060 여성) 중 상승 모멘텀 상위 5개</b>로 쇼핑 검색을 집계해, 4060 타겟 소비로 이어질 확률이 높은 브랜드와 상품군을 추천합니다. 가격은 네이버 최저가 기준(카탈로그 상품은 "네이버 최저가" 표시).</div>
+      <div class="chips" id="brandCrumb"></div>
+      <div class="chips" id="brandChildChips"></div>
+      <div id="brandBody"><div class="empty">카테고리를 선택하세요.</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 키워드 상세 모달 -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════ 설정: 카테고리 & 큐레이션 키워드 풀 ══════════════ */
+/* 4060 여성 + 홈쇼핑 주력 상품군 기준으로 선정. 필요 시 자유롭게 수정하세요. */
+/* kws = 상품 분류 키워드, brands = 브랜드 키워드 (모두 자유롭게 수정 가능) */
+const CATS = [
+  { cid:'50000000', name:'패션의류',   kws:['린넨원피스','여성 카디건','와이드팬츠','냉감티셔츠','여성 슬랙스','블라우스','여성 니트','여름원피스','골프웨어','레인코트'],
+    brands:['쉬즈미스','올리비아로렌','크로커다일레이디','마리끌레르','지고트','발렌시아','씨씨콜렉트','베스띠벨리'] },
+  { cid:'50000001', name:'패션잡화',   kws:['여성 샌들','컴포트화','여성 운동화','크로스백','숄더백','양산','선글라스','스카프','진주목걸이','여성 모자'],
+    brands:['금강제화','소다','닥스','메트로시티','루이까또즈','탠디','락포트','빈폴'] },
+  { cid:'50000002', name:'화장품/미용', kws:['탄력크림','주름개선 세럼','새치커버','염색약','쿠션팩트','선크림','두피앰플','미백크림','아이크림','헤어에센스'],
+    brands:['설화수','더히스토리오브후','오휘','숨37','AHC','아이오페','미샤','참존'] },
+  { cid:'50000006', name:'식품',       kws:['홍삼','유산균','오메가3','루테인','콜라겐','밀크씨슬','석류즙','갈비탕','전복','장어'],
+    brands:['정관장','종근당건강','락토핏','뉴트리원','비비고','풀무원','청정원','하림'] },
+  { cid:'50000008', name:'생활/건강',   kws:['안마의자','목마사지기','발마사지기','마사지건','혈압계','무릎보호대','제습제','욕실화','찜질기','족욕기'],
+    brands:['바디프랜드','세라젬','코지마','휴테크','오므론','필립스','브레오','파나소닉'] },
+  { cid:'50000003', name:'디지털/가전', kws:['에어프라이어','무선청소기','제습기','김치냉장고','전기밥솥','선풍기','음식물처리기','인덕션','식기세척기','에어컨'],
+    brands:['삼성전자','LG전자','쿠쿠','쿠첸','테팔','위닉스','다이슨','일렉트로룩스'] },
+  { cid:'50000004', name:'가구/인테리어', kws:['리클라이너','라텍스매트리스','냉감패드','구스이불','호텔침구','암막커튼','소파','식탁','화장대','수납장'],
+    brands:['한샘','시몬스','에이스침대','템퍼','일룸','알레르망','이브자리','소프라움'] },
+  { cid:'50000007', name:'스포츠/레저', kws:['등산화','등산복','골프채','골프화','트레킹화','요가매트','아쿠아슈즈','골프백','필라테스복','등산가방'],
+    brands:['노스페이스','코오롱스포츠','K2','블랙야크','아이더','네파','타이틀리스트','캘러웨이'] },
+];
+const PGM_SLOT = { '패션의류':'오전(9~11시)·저녁(19~21시)', '패션잡화':'오전(9~11시)', '화장품/미용':'오전(10~12시)·심야(22시~)',
+  '식품':'아침(6~9시)·점심(11~14시)', '생활/건강':'아침(7~10시)', '디지털/가전':'주말 낮·저녁(20~22시)',
+  '가구/인테리어':'주말 낮(13~17시)', '스포츠/레저':'주말 오전' };
+
+/* 테마별 차트 팔레트 */
+const PALETTES = {
+  toss:   ['#3182f6','#6c5ce7','#00b894','#f04452','#f5a623','#e84393','#00cec9','#636e72'],
+  dark:   ['#22d3ee','#a78bfa','#34d399','#ff6b6b','#fbbf24','#f472b6','#60a5fa','#94a3b8'],
+  pastel: ['#ef7fa4','#8fb7e8','#a8d8b9','#f5b971','#b79ce8','#f2a7c3','#7fd0d8','#c9b8a8'],
+};
+function palette() { return PALETTES[document.body.dataset.theme] || PALETTES.toss; }
+const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', sortBy: 'momentum', sortAges: [], fitLoading: false };
+const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, sortBy: 'lift', sortAges: [] }; // 시즌 선행 탭 상태
+const bState = { stack: [] }; // 브랜드/상품 추천 탭 상태
+
+/* ══ 카테고리 드릴다운 공용 컴포넌트 ══
+   루트 = 대분류 8개, 그 아래는 네이버 분류 트리를 실시간 조회.
+   반환된 render 함수를 호출하면 경로(브레드크럼)와 하위 탐색 칩을 다시 그린다. */
+function drillNav(crumbId, chipsId, obj, onChange) {
+  const render = async () => {
+    const crumbEl = document.getElementById(crumbId), chipsEl = document.getElementById(chipsId);
+    const crumbs = [{ cid: null, name: '🏠 전체' }, ...obj.stack];
+    crumbEl.innerHTML = '<span class="chips-label">카테고리</span>' + crumbs.map((c, i) => {
+      const last = i === crumbs.length - 1;
+      return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${c.name}</button>` +
+        (last ? '' : '<span style="color:var(--sub)">›</span>');
+    }).join('');
+    crumbEl.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+      obj.stack = obj.stack.slice(0, +b.dataset.i);
+      render(); onChange();
+    });
+    let children = [];
+    try {
+      children = obj.stack.length
+        ? await fetchChildren(obj.stack[obj.stack.length - 1].cid)
+        : CATS.map(c => ({ cid: c.cid, name: c.name }));
+    } catch(_) {}
+    chipsEl.innerHTML = children.length
+      ? '<span class="chips-label">하위 탐색</span>' + children.map((c, i) => `<button class="chip" data-i="${i}">${c.name} ›</button>`).join('')
+      : '';
+    chipsEl.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+      const c = children[+b.dataset.i];
+      obj.stack = [...obj.stack, { cid: String(c.cid), name: c.name }];
+      render(); onChange();
+    });
+  };
+  return render;
+}
+
+/* 카테고리별 네이버 인기 검색어 TOP (4060 여성, 최근 4주, 서버 캐시) */
+async function fetchKeywordRank(cid, count = 20) {
+  const r = await fetch(`/api/keywordrank?cid=${cid}&count=${count}`);
+  if (!r.ok) throw new Error('인기 검색어 조회 실패');
+  return ((await r.json()).ranks || []).map(x => x.keyword);
+}
+
+/* ══════════════ 테마 전환 (UI 전용 — 데이터 로직과 무관) ══════════════ */
+function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+function applyTheme(t) {
+  document.body.dataset.theme = t;
+  localStorage.setItem('theme4060', t);
+  document.querySelectorAll('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  // Chart.js 텍스트/그리드 기본색을 테마에 맞춰 갱신
+  Chart.defaults.color = cssVar('--chart-ink');
+  Chart.defaults.borderColor = cssVar('--chart-grid');
+  // 이미 그려진 차트는 새 팔레트로 재생성 (config 함수를 다시 실행)
+  for (const [id, cfgFn] of Object.entries(state.chartCfgs)) {
+    const canvas = document.getElementById(id);
+    if (canvas && canvas.isConnected) makeChart(id, cfgFn);
+  }
+  // 스파크라인·연령 막대도 테마 색으로 다시 그리기
+  renderAgeLegend('ageLegend', activeAgesOf(state.sortBy, state.sortAges));
+  if (state.best.length) renderBestTable();
+  if (sState.rows.length) renderSeason();
+}
+document.querySelectorAll('#themeSeg button').forEach(b => b.onclick = () => applyTheme(b.dataset.t));
+
+/* ══════════════ 공통 유틸 ══════════════ */
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function dateRange() {
+  // 진행 중인 이번 주는 며칠치만 집계돼 수치가 급락해 보이므로,
+  // 마지막으로 "완결된 주(월~일)"의 일요일까지만 조회한다.
+  const now = new Date();
+  const back = now.getDay() === 0 ? 7 : now.getDay(); // 지난 일요일까지 거슬러가는 일수
+  const end = new Date(now); end.setDate(now.getDate() - back);
+  const start = new Date(end); start.setDate(end.getDate() - 69); // 10주(70일) 전 월요일
+  return { startDate: ymd(start), endDate: ymd(end) };
+}
+async function datalab(route, body) {
+  const r = await fetch('/api/datalab/' + route, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    if (j.errorCode === '024' || r.status === 401 || r.status === 403) {
+      state.datalabOff = true;
+      document.getElementById('setupBanner').classList.add('show');
+      document.getElementById('statusBadge').textContent = '데이터랩 미연동';
+    }
+    throw new Error(j.errorMessage || 'API 오류 ' + r.status);
+  }
+  return j;
+}
+async function shopSearch(q, display = 20) {
+  const r = await fetch(`/api/shop?query=${encodeURIComponent(q)}&display=${display}`);
+  if (!r.ok) throw new Error('쇼핑 검색 실패');
+  return r.json();
+}
+function growthOf(data) {
+  const vals = (data || []).map(d => d.ratio);
+  if (vals.length < 4) return null;
+  const recent = vals.slice(-2), base = vals.slice(0, -2);
+  const rAvg = recent.reduce((a,b)=>a+b,0) / recent.length;
+  const bAvg = base.reduce((a,b)=>a+b,0) / base.length;
+  if (bAvg < 0.5) return null; // 데이터 미미 → 노이즈 제외
+  return (rAvg - bAvg) / bAvg * 100;
+}
+function growthBadge(g) {
+  if (g === null || g === undefined) return '<span class="growth flat">–</span>';
+  const cls = g > 3 ? 'up' : g < -3 ? 'down' : 'flat';
+  const arrow = g > 3 ? '▲' : g < -3 ? '▼' : '·';
+  return `<span class="growth ${cls}">${arrow} ${Math.abs(g).toFixed(1)}%</span>`;
+}
+function esc(s) { return (s||'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"'); }
+function fmtPrice(p) { return Number(p).toLocaleString('ko-KR') + '원'; }
+function drawSpark(canvas, vals, color) {
+  const ctx = canvas.getContext('2d'), W = canvas.width = 110, H = canvas.height = 30;
+  if (!vals || vals.length < 2) return;
+  const min = Math.min(...vals), max = Math.max(...vals), rng = max - min || 1;
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = i / (vals.length - 1) * (W - 4) + 2;
+    const y = H - 3 - (v - min) / rng * (H - 6);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.stroke();
+}
+/* cfgFn: 현재 테마 팔레트로 차트 설정을 만들어 주는 함수. 테마 전환 시 다시 실행됨 */
+function makeChart(id, cfgFn) {
+  if (state.charts[id]) state.charts[id].destroy();
+  state.chartCfgs[id] = cfgFn;
+  state.charts[id] = new Chart(document.getElementById(id), cfgFn());
+}
+function switchTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.panel).classList.add('active');
+  if (btn.dataset.panel === 'pCat' && !state.catLoaded) loadCategories();
+  if (btn.dataset.panel === 'pSeason' && !sState.loaded) loadSeason();
+}
+async function hardRefresh() {
+  await fetch('/api/cache/clear');
+  location.reload();
+}
+
+/* ══════════════ ① 베스트 키워드 ══════════════ */
+async function loadBest() {
+  const { startDate, endDate } = dateRange();
+  const body = document.getElementById('bestBody');
+  try {
+    const jobs = [];
+    for (const cat of CATS) {
+      // 상품 분류 키워드와 브랜드 키워드를 각각 조회하고 유형 태그를 붙임
+      for (const [type, pool] of [['prod', cat.kws], ['brand', cat.brands || []]]) {
+        for (let i = 0; i < pool.length; i += 5) {
+          const chunk = pool.slice(i, i + 5);
+          jobs.push(
+            datalab('shopping/keywords', {
+              startDate, endDate, timeUnit:'week', category: cat.cid,
+              keyword: chunk.map(k => ({ name: k, param: [k] })),
+              gender: 'f', ages: ['40','50','60'],
+            }).then(j => ({ cat, type, results: j.results || [] }))
+          );
+        }
+      }
+    }
+    const settled = await Promise.allSettled(jobs);
+    const rows = [];
+    for (const s of settled) {
+      if (s.status !== 'fulfilled') continue;
+      for (const r of s.value.results) {
+        const g = growthOf(r.data);
+        rows.push({ kw: r.title, cat: s.value.cat, type: s.value.type, growth: g, series: (r.data||[]).map(d => d.ratio), fit: null, ageShares: null });
+      }
+    }
+    if (!rows.length) throw new Error('데이터 없음');
+    rows.sort((a, b) => (b.growth ?? -999) - (a.growth ?? -999));
+    state.best = rows;
+    renderBestTable();
+    renderInsights(rows);
+    document.getElementById('statusBadge').textContent = `기준: ${startDate} ~ ${endDate} (주간)`;
+    ensureFits(rows, refreshFitViews); // 타겟 적합도(연령 구성)는 백그라운드에서 채워짐
+  } catch (e) {
+    body.innerHTML = state.datalabOff
+      ? '<div class="empty">데이터랩 API 권한 등록 후 이용 가능합니다. 상단 안내를 참고하세요.</div>'
+      : `<div class="empty">조회 실패: ${e.message}</div>`;
+  }
+}
+
+/* 키워드별 클릭 연령 구성 → 타겟 적합도 계산.
+   kw|cid 단위 전역 캐시(fitCache)를 공유해 베스트/시즌/드릴다운 어디서든 중복 호출 없이 재사용 (동시 6개 제한, 서버 6시간 캐시) */
+const fitCache = new Map();
+let fitJobsActive = 0;
+async function ensureFits(rows, onUpdate) {
+  const { startDate, endDate } = dateRange();
+  const queue = rows.filter(r => {
+    const c = fitCache.get(r.kw + '|' + r.cat.cid);
+    if (c) { r.fit = c.fit; r.ageShares = c.ageShares; return false; }
+    return r.fit === null || r.fit === undefined;
+  });
+  if (!queue.length) { onUpdate(); return; }
+  state.fitLoading = true; fitJobsActive++;
+  let done = 0;
+  async function worker() {
+    while (queue.length) {
+      const r = queue.shift();
+      try {
+        const j = await datalab('shopping/keyword/age', { startDate, endDate, timeUnit:'week', category: r.cat.cid, keyword: r.kw });
+        const by = {};
+        (j.results?.[0]?.data || []).forEach(d => by[d.group] = (by[d.group] || 0) + d.ratio);
+        const total = Object.values(by).reduce((a,b) => a+b, 0);
+        if (total > 0) {
+          r.ageShares = {};
+          for (const g of AGE_GROUPS) r.ageShares[g] = (by[g] || 0) / total * 100;
+          r.fit = r.ageShares['40'] + r.ageShares['50'] + r.ageShares['60'];
+          fitCache.set(r.kw + '|' + r.cat.cid, { fit: r.fit, ageShares: r.ageShares });
+        }
+      } catch(_) {}
+      done++;
+      if (done % 10 === 0) onUpdate(); // 10개 계산될 때마다 화면 갱신
+    }
+  }
+  await Promise.all(Array.from({ length: 6 }, worker));
+  if (--fitJobsActive === 0) state.fitLoading = false;
+  onUpdate();
+}
+function refreshFitViews() {
+  renderBestTable();
+  if (sState.rows.length || sState.drillRows.length) renderSeason();
+}
+
+function typeBadge(fit) {
+  if (fit === null || fit === undefined) return '';
+  if (fit >= 55) return '<span class="type-badge core">4060 특화</span>';
+  if (fit >= 40) return '<span class="type-badge all">전연령 공통</span>';
+  return '<span class="type-badge young">저연령 중심</span>';
+}
+const AGE_GROUPS = ['10','20','30','40','50','60'];
+/* 연령대별 고정 색: 40·50·60대는 테마 포인트 3색, 10·20·30대는 보조 3색 */
+function ageColors() {
+  const p = palette();
+  return { '10':p[3], '20':p[4], '30':p[5], '40':p[0], '50':p[1], '60':p[2] };
+}
+/* 막대에서 강조할 연령대: 연령 정렬 중이면 선택된 연령, 아니면 기본 40·50·60 */
+function activeAgesOf(sortBy, sortAges) {
+  return (sortBy === 'age' && sortAges.length) ? sortAges : ['40','50','60'];
+}
+function agebarHtml(shares, act) {
+  if (!shares) return '';
+  const colors = ageColors();
+  return '<div class="agebar">' +
+    AGE_GROUPS.map(g => `<span style="width:${shares[g].toFixed(1)}%;background:${act.includes(g) ? colors[g] : 'var(--line)'}"></span>`).join('') +
+    '</div>';
+}
+function renderAgeLegend(elId, act) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const colors = ageColors();
+  el.innerHTML = '연령 구성 막대: ' +
+    AGE_GROUPS.map(g => `<i style="background:${act.includes(g) ? colors[g] : 'var(--line)'}"></i>${g}대`).join(' ') +
+    ' <span style="margin-left:6px">(회색 = 현재 강조하지 않는 연령)</span>';
+}
+function fitCell(r, sortBy, sortAges) {
+  if (r.fit !== null && r.fit !== undefined) {
+    let extra = '';
+    if (sortBy === 'age' && sortAges.length) {
+      const sum = sortAges.reduce((a,g) => a + (r.ageShares?.[g] || 0), 0);
+      extra = `<span class="calc" style="margin-left:6px">선택 ${sortAges.join('·')}대 ${sum.toFixed(0)}%</span>`;
+    }
+    return `<div class="fit-cell"><b>${r.fit.toFixed(0)}점</b>${typeBadge(r.fit)}${extra}${agebarHtml(r.ageShares, activeAgesOf(sortBy, sortAges))}</div>`;
+  }
+  return state.fitLoading ? '<span class="calc"><span class="spinner" style="width:10px;height:10px"></span>계산중</span>' : '<span class="calc">–</span>';
+}
+
+/* 베스트 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어 TOP 20(4060 여성) 기반으로 전환 */
+const bestNav = drillNav('bestCrumb', 'bestChildChips', state, () => {
+  document.getElementById('typeChips').style.display = state.stack.length ? 'none' : '';
+  if (state.stack.length) loadBestDrill();
+  else renderBestTable();
+});
+async function loadBestDrill() {
+  const node = state.stack[state.stack.length - 1];
+  const body = document.getElementById('bestBody');
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어(4060 여성) 조회 중...</div>`;
+  const { startDate, endDate } = dateRange();
+  try {
+    const kws = await fetchKeywordRank(node.cid, 20);
+    if (!kws.length) throw new Error('인기 검색어 없음');
+    const jobs = [];
+    for (let i = 0; i < kws.length; i += 5) {
+      const chunk = kws.slice(i, i + 5);
+      jobs.push(datalab('shopping/keywords', {
+        startDate, endDate, timeUnit:'week', category: node.cid,
+        keyword: chunk.map(k => ({ name: k, param: [k] })),
+        gender: 'f', ages: ['40','50','60'],
+      }));
+    }
+    const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
+    const rank = new Map(kws.map((k, i) => [k, i]));
+    const rows = resAll.map(r => ({
+      kw: r.title, cat: { cid: node.cid, name: node.name }, type: 'rank',
+      growth: growthOf(r.data), series: (r.data || []).map(d => d.ratio),
+      rank: rank.get(r.title) ?? 99, fit: null, ageShares: null,
+    })).sort((a, b) => a.rank - b.rank);
+    if (state.stack.length && state.stack[state.stack.length - 1].cid !== node.cid) return; // 이동 중 응답 무시
+    state.drillRows = rows;
+    renderBestTable();
+    ensureFits(rows, refreshFitViews);
+  } catch (e) {
+    body.innerHTML = `<div class="empty">조회 실패: ${e.message}</div>`;
+  }
+}
+/* 키워드 유형 칩: 전체 / 상품 / 브랜드 */
+document.querySelectorAll('#typeChips .chip').forEach(ch => ch.onclick = () => {
+  document.querySelectorAll('#typeChips .chip').forEach(x => x.classList.remove('on'));
+  ch.classList.add('on');
+  state.kwType = ch.dataset.t;
+  renderBestTable();
+});
+
+/* 정렬 칩: 모멘텀/적합도는 단일 선택, 연령 칩은 복수 선택(합산 비중순) */
+document.querySelectorAll('#sortChips .chip').forEach(ch => ch.onclick = () => {
+  if (ch.dataset.s) {                       // 모멘텀 or 적합도
+    state.sortBy = ch.dataset.s;
+    state.sortAges = [];
+  } else {                                   // 연령 칩 토글
+    const g = ch.dataset.g;
+    state.sortAges = state.sortAges.includes(g)
+      ? state.sortAges.filter(x => x !== g)
+      : [...state.sortAges, g].sort((a,b) => +a - +b);
+    state.sortBy = state.sortAges.length ? 'age' : 'momentum';
+  }
+  document.querySelectorAll('#sortChips .chip').forEach(x => {
+    if (x.dataset.s) x.classList.toggle('on', state.sortBy === x.dataset.s);
+    else x.classList.toggle('on', state.sortAges.includes(x.dataset.g));
+  });
+  renderBestTable();
+});
+
+function renderBestTable() {
+  renderAgeLegend('ageLegend', activeAgesOf(state.sortBy, state.sortAges));
+  const sort = state.sortBy;
+  const ageSum = r => state.sortAges.reduce((a,g) => a + (r.ageShares?.[g] ?? 0), 0);
+  let rows = state.stack.length
+    ? state.drillRows
+    : state.best.filter(r => state.kwType === 'all' || r.type === state.kwType);
+  if (sort === 'momentum')      rows = [...rows].sort((a,b) => (b.growth ?? -999) - (a.growth ?? -999));
+  else if (sort === 'fit')      rows = [...rows].sort((a,b) => (b.fit ?? -1) - (a.fit ?? -1));
+  else /* 선택 연령 합산 비중 */ rows = [...rows].sort((a,b) => (b.ageShares ? ageSum(b) : -1) - (a.ageShares ? ageSum(a) : -1));
+  rows = rows.slice(0, 20);
+
+  const body = document.getElementById('bestBody');
+  if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
+  const sortLbl = sort === 'age' ? `${state.sortAges.join('·')}대 비중순`
+    : { momentum:'모멘텀순', fit:'4060 적합도순' }[sort];
+  body.innerHTML = `<table><thead><tr><th>${sortLbl}</th><th>키워드</th><th>최근 2주 모멘텀</th><th>타겟 적합도 · 연령 구성</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
+    rows.map((r, i) => `
+      <tr class="kw-row">
+        <td class="rank">${i + 1}</td>
+        <td><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td>${growthBadge(r.growth)}</td>
+        <td>${fitCell(r, state.sortBy, state.sortAges)}</td>
+        <td><canvas class="spark"></canvas></td>
+        <td style="text-align:right"><button class="btn" style="padding:5px 10px;font-size:12px">상세 →</button></td>
+      </tr>`).join('') + '</tbody></table>';
+  body.querySelectorAll('.kw-row').forEach((tr, i) => {
+    drawSpark(tr.querySelector('canvas'), rows[i].series, (rows[i].growth ?? 0) > 3 ? cssVar('--up') : cssVar('--sub'));
+    tr.onclick = () => openDetail(rows[i].kw, rows[i].cat);
+  });
+}
+function renderInsights(rows) {
+  const ups = rows.filter(r => r.growth !== null && r.growth > 5).slice(0, 5);
+  if (!ups.length) return;
+  const catCount = {};
+  ups.forEach(r => catCount[r.cat.name] = (catCount[r.cat.name] || 0) + 1);
+  const hotCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0][0];
+  const list = [];
+  list.push(`<li><span class="tag sale">판매</span><b>${ups.slice(0,3).map(r=>r.kw).join(' · ')}</b> 검색 관심이 최근 2주 급상승 — 관련 상품 소싱/재고 점검 및 프로모션 우선 검토</li>`);
+  list.push(`<li><span class="tag mkt">마케팅</span>상승 키워드 <b>${ups.map(r=>`"${r.kw}"`).join(', ')}</b> 를 검색광고·상품명·방송 타이틀 카피에 반영하면 4060 여성 유입 효율 기대</li>`);
+  list.push(`<li><span class="tag pgm">편성</span>모멘텀 최다 카테고리는 <b>${hotCat}</b> — 4060 여성 시청 집중 시간대(${PGM_SLOT[hotCat] || '오전·저녁'}) 편성 확대 검토</li>`);
+  document.getElementById('insightList').innerHTML = list.join('');
+  document.getElementById('insightBox').style.display = 'block';
+}
+
+/* ══════════════ ①-2 시즌 선행 분석 ══════════════ */
+/* 최근 15개월(65주)을 한 번에 조회 → 시리즈 전체가 같은 척도로 정규화되어
+   "올해 현재 vs 전년 동시즌", "전년의 시즌 상승 패턴"을 직접 비교할 수 있다 */
+function dateRangeSeason() {
+  const now = new Date();
+  const back = now.getDay() === 0 ? 7 : now.getDay();
+  const end = new Date(now); end.setDate(now.getDate() - back);       // 지난 일요일
+  const start = new Date(end); start.setDate(end.getDate() - 7 * 65 + 1); // 65주 전
+  return { startDate: ymd(start), endDate: ymd(end) };
+}
+
+async function loadSeason() {
+  sState.loaded = true;
+  const { startDate, endDate } = dateRangeSeason();
+  const body = document.getElementById('seasonBody');
+  try {
+    const jobs = [];
+    for (const cat of CATS) {
+      for (const [type, pool] of [['prod', cat.kws], ['brand', cat.brands || []]]) {
+        for (let i = 0; i < pool.length; i += 5) {
+          const chunk = pool.slice(i, i + 5);
+          jobs.push(
+            datalab('shopping/keywords', {
+              startDate, endDate, timeUnit:'week', category: cat.cid,
+              keyword: chunk.map(k => ({ name: k, param: [k] })),
+              gender: 'f', ages: ['40','50','60'],
+            }).then(j => ({ cat, type, results: j.results || [] }))
+          );
+        }
+      }
+    }
+    const settled = await Promise.allSettled(jobs);
+    const rows = [];
+    for (const s of settled) {
+      if (s.status !== 'fulfilled') continue;
+      for (const r of s.value.results) {
+        rows.push({ kw: r.title, cat: s.value.cat, type: s.value.type, data: r.data || [] });
+      }
+    }
+    if (!rows.length) throw new Error('데이터 없음');
+    sState.rows = rows;
+    renderSeason();
+  } catch (e) {
+    body.innerHTML = state.datalabOff
+      ? '<div class="empty">데이터랩 API 권한 등록 후 이용 가능합니다.</div>'
+      : `<div class="empty">조회 실패: ${e.message}</div>`;
+  }
+}
+
+/* 시즌 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어(4060 여성) 기반 시즌 분석 */
+const seasonNav = drillNav('seasonCrumb', 'seasonChildChips', sState, () => {
+  document.getElementById('seasonTypeChips').style.display = sState.stack.length ? 'none' : '';
+  if (sState.stack.length) loadSeasonDrill();
+  else renderSeason();
+});
+async function loadSeasonDrill() {
+  const node = sState.stack[sState.stack.length - 1];
+  const body = document.getElementById('seasonBody');
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어의 전년 데이터 조회 중...</div>`;
+  const { startDate, endDate } = dateRangeSeason();
+  try {
+    const kws = await fetchKeywordRank(node.cid, 20);
+    if (!kws.length) throw new Error('인기 검색어 없음');
+    const jobs = [];
+    for (let i = 0; i < kws.length; i += 5) {
+      const chunk = kws.slice(i, i + 5);
+      jobs.push(datalab('shopping/keywords', {
+        startDate, endDate, timeUnit:'week', category: node.cid,
+        keyword: chunk.map(k => ({ name: k, param: [k] })),
+        gender: 'f', ages: ['40','50','60'],
+      }));
+    }
+    const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
+    const rows = resAll.map(r => ({
+      kw: r.title, cat: { cid: node.cid, name: node.name }, type: 'rank', data: r.data || [],
+      fit: null, ageShares: null,
+    }));
+    if (sState.stack.length && sState.stack[sState.stack.length - 1].cid !== node.cid) return; // 이동 중 응답 무시
+    sState.drillRows = rows;
+    renderSeason();
+    ensureFits(rows, refreshFitViews);
+  } catch (e) {
+    body.innerHTML = `<div class="empty">조회 실패: ${e.message}</div>`;
+  }
+}
+
+/* 전년 동시점 인덱스를 찾아 YoY / 리드타임 후 상승률 계산 */
+function seasonCalc(r) {
+  const pts = r.data;
+  if (!pts || pts.length < 30) return null;
+  const lastYear = new Date(Date.now() - 365 * 864e5);
+  let iNow = 0, bestDiff = Infinity;
+  pts.forEach((p, i) => {
+    const diff = Math.abs(new Date(p.period) - lastYear);
+    if (diff < bestDiff) { bestDiff = diff; iNow = i; }
+  });
+  const iTarget = Math.min(iNow + Math.round(sState.lead * 4.345), pts.length - 1);
+  const avgAt = i => {
+    const vals = [];
+    for (let k = Math.max(0, i - 1); k <= Math.min(pts.length - 1, i + 1); k++) vals.push(pts[k].ratio);
+    return vals.reduce((a,b) => a+b, 0) / vals.length;
+  };
+  const lyNow = avgAt(iNow);              // 전년 동시점 수준
+  const lyTarget = avgAt(iTarget);        // 전년, 리드타임 후 수준
+  const current = avgAt(pts.length - 2);  // 올해 최근 수준
+  if (lyNow < 0.5) return { iNow, iTarget, lift: null, yoy: null }; // 데이터 미미
+  return {
+    iNow, iTarget,
+    lift: (lyTarget - lyNow) / lyNow * 100, // 전년 패턴: 지금→리드타임 후 상승률
+    yoy:  (current - lyNow) / lyNow * 100,  // 올해 현재 vs 전년 동시즌
+  };
+}
+
+function seasonAction(lift) {
+  if (lift === null) return '<span class="calc">데이터 부족</span>';
+  if (lift >= 50) return '<span class="growth up">🚨 지금 편성 확정</span>';
+  if (lift >= 20) return '<span class="growth up">✅ 소싱 착수 권장</span>';
+  if (lift >= -10) return '<span class="growth flat">· 시즌 영향 적음</span>';
+  return '<span class="growth down">▼ 시즌 아웃 구간</span>';
+}
+
+function drawSeasonSpark(canvas, vals, relNow, relTarget) {
+  const ctx = canvas.getContext('2d'), W = canvas.width = 150, H = canvas.height = 34;
+  if (!vals || vals.length < 2) return;
+  const min = Math.min(...vals), max = Math.max(...vals), rng = max - min || 1;
+  const xy = i => [ i / (vals.length - 1) * (W - 8) + 4, H - 4 - (vals[i] - min) / rng * (H - 8) ];
+  ctx.strokeStyle = cssVar('--sub'); ctx.lineWidth = 1.4; ctx.beginPath();
+  vals.forEach((v, i) => { const [x, y] = xy(i); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+  const dot = (i, color) => {
+    if (i < 0 || i >= vals.length) return;
+    const [x, y] = xy(i);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fill();
+  };
+  dot(relNow, cssVar('--accent'));   // 전년의 "지금" 시점
+  dot(relTarget, cssVar('--up'));    // 리드타임 후 시점
+}
+
+document.querySelectorAll('#seasonTypeChips .chip').forEach(ch => ch.onclick = () => {
+  document.querySelectorAll('#seasonTypeChips .chip').forEach(x => x.classList.remove('on'));
+  ch.classList.add('on');
+  sState.type = ch.dataset.t;
+  renderSeason();
+});
+/* 시즌 탭 정렬 칩: 상승률/적합도는 단일 선택, 연령 칩은 복수 선택(합산 비중순) */
+document.querySelectorAll('#seasonSortChips .chip').forEach(ch => ch.onclick = () => {
+  if (ch.dataset.s) {
+    sState.sortBy = ch.dataset.s;
+    sState.sortAges = [];
+  } else {
+    const g = ch.dataset.g;
+    sState.sortAges = sState.sortAges.includes(g)
+      ? sState.sortAges.filter(x => x !== g)
+      : [...sState.sortAges, g].sort((a,b) => +a - +b);
+    sState.sortBy = sState.sortAges.length ? 'age' : 'lift';
+  }
+  document.querySelectorAll('#seasonSortChips .chip').forEach(x => {
+    if (x.dataset.s) x.classList.toggle('on', sState.sortBy === x.dataset.s);
+    else x.classList.toggle('on', sState.sortAges.includes(x.dataset.g));
+  });
+  renderSeason();
+});
+
+function renderSeason() {
+  renderAgeLegend('seasonAgeLegend', activeAgesOf(sState.sortBy, sState.sortAges));
+  const body = document.getElementById('seasonBody');
+  const src = sState.stack.length ? sState.drillRows : sState.rows;
+  if (!src.length) return;
+  const ageSum = r => sState.sortAges.reduce((a,g) => a + (r.ageShares?.[g] ?? 0), 0);
+  let rows = src
+    .filter(r => sState.stack.length || sState.type === 'all' || r.type === sState.type)
+    .map(r => {
+      // 적합도/연령 구성은 전역 fitCache(베스트 탭과 공유)에서 조회
+      const c = fitCache.get(r.kw + '|' + r.cat.cid);
+      return { ...r, calc: seasonCalc(r), fit: r.fit ?? c?.fit ?? null, ageShares: r.ageShares ?? c?.ageShares ?? null };
+    })
+    .filter(r => r.calc);
+  if (sState.sortBy === 'lift')     rows.sort((a,b) => (b.calc.lift ?? -999) - (a.calc.lift ?? -999));
+  else if (sState.sortBy === 'fit') rows.sort((a,b) => (b.fit ?? -1) - (a.fit ?? -1));
+  else /* 선택 연령 합산 비중 */    rows.sort((a,b) => (b.ageShares ? ageSum(b) : -1) - (a.ageShares ? ageSum(a) : -1));
+  rows = rows.slice(0, 20);
+  if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
+
+  const targetMonth = new Date(); targetMonth.setMonth(targetMonth.getMonth() + sState.lead);
+  const mLabel = `${targetMonth.getMonth() + 1}월`;
+  const sortLbl = sState.sortBy === 'lift' ? '상승률순' : sState.sortBy === 'fit' ? '적합도순' : `${sState.sortAges.join('·')}대 비중순`;
+  body.innerHTML = `<table><thead><tr><th>${sortLbl}</th><th>키워드</th><th>올해 vs 전년 동시즌</th><th>전년 패턴: ${sState.lead}개월 후(${mLabel}) 상승률</th><th>타겟 적합도 · 연령 구성</th><th>전년 시즌 흐름</th><th>편성 판단</th></tr></thead><tbody>` +
+    rows.map((r, i) => `
+      <tr class="kw-row">
+        <td class="rank">${i + 1}</td>
+        <td><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td>${growthBadge(r.calc.yoy)}</td>
+        <td>${growthBadge(r.calc.lift)}</td>
+        <td>${fitCell(r, sState.sortBy, sState.sortAges)}</td>
+        <td><canvas class="spark" style="width:150px"></canvas></td>
+        <td>${seasonAction(r.calc.lift)}</td>
+      </tr>`).join('') + '</tbody></table>';
+  body.querySelectorAll('.kw-row').forEach((tr, i) => {
+    const r = rows[i], c = r.calc;
+    // 전년의 현재 시점 앞뒤(전 6주 ~ 리드타임+6주)만 잘라서 시즌 흐름을 보여줌
+    const from = Math.max(0, c.iNow - 6), to = Math.min(r.data.length - 1, c.iTarget + 6);
+    const vals = r.data.slice(from, to + 1).map(d => d.ratio);
+    drawSeasonSpark(tr.querySelector('canvas'), vals, c.iNow - from, c.iTarget - from);
+    tr.onclick = () => openDetail(r.kw, r.cat);
+  });
+  renderSeasonInsights(rows, mLabel);
+}
+
+function renderSeasonInsights(rows, mLabel) {
+  const hot = rows.filter(r => r.calc.lift !== null && r.calc.lift >= 20).slice(0, 5);
+  const box = document.getElementById('seasonInsight');
+  if (!hot.length) { box.style.display = 'none'; return; }
+  const list = [];
+  list.push(`<li><span class="tag pgm">편성</span>전년 패턴상 <b>${mLabel}</b>에 검색이 급증한 키워드: <b>${hot.map(r => `${r.kw}(+${r.calc.lift.toFixed(0)}%)`).join(' · ')}</b> — 리드타임 ${sState.lead}개월을 고려하면 <b>지금이 편성 확정·상품 준비 시점</b>입니다.</li>`);
+  list.push(`<li><span class="tag sale">판매</span>위 키워드 관련 상품의 MD 소싱·재고·조건협의를 이번 주 안에 착수하면 전년 성수기 진입 전에 방송 준비를 마칠 수 있습니다.</li>`);
+  const yoyUp = rows.filter(r => r.calc.yoy !== null && r.calc.yoy > 20).slice(0, 3);
+  if (yoyUp.length) list.push(`<li><span class="tag mkt">마케팅</span>올해가 전년 동시즌보다 이미 높은 키워드: <b>${yoyUp.map(r => r.kw).join(' · ')}</b> — 전년보다 시즌이 빨리/강하게 오고 있어 예상 물량 상향 검토.</li>`);
+  document.getElementById('seasonInsightList').innerHTML = list.join('');
+  box.style.display = 'block';
+}
+
+/* ══════════════ ② 카테고리 트렌드 (네이버 분류 드릴다운) ══════════════ */
+const ctState = { stack: [] }; // 드릴다운 경로. 비어있으면 대분류 8개
+
+async function fetchChildren(cid) {
+  const r = await fetch('/api/category?cid=' + cid);
+  if (!r.ok) throw new Error('카테고리 트리 조회 실패');
+  return (await r.json()).children || [];
+}
+
+function renderCatCrumb(childList) {
+  const el = document.getElementById('catCrumb');
+  const crumbs = [{ cid: null, name: '🏠 대분류' }, ...ctState.stack];
+  el.innerHTML = '<span class="chips-label">위치</span>' + crumbs.map((c, i) => {
+    const last = i === crumbs.length - 1;
+    return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${c.name}</button>` +
+      (last ? '' : '<span style="color:var(--sub)">›</span>');
+  }).join('');
+  el.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    ctState.stack = ctState.stack.slice(0, +b.dataset.i);
+    loadCategories();
+  });
+  const chipsEl = document.getElementById('catChildChips');
+  if (!childList || !childList.length) { chipsEl.innerHTML = ''; return; }
+  chipsEl.innerHTML = '<span class="chips-label">하위 탐색</span>' + childList.map((c, i) =>
+    `<button class="chip" data-i="${i}" ${c.leaf ? 'disabled style="opacity:.45;cursor:default"' : ''}>${c.name}${c.leaf ? '' : ' ›'}</button>`).join('');
+  chipsEl.querySelectorAll('.chip:not([disabled])').forEach(b => b.onclick = () => {
+    ctState.stack.push(childList[+b.dataset.i]);
+    loadCategories();
+  });
+}
+
+async function loadCategories() {
+  state.catLoaded = true;
+  const status = document.getElementById('catStatus');
+  status.innerHTML = '<span class="spinner"></span>불러오는 중...';
+  const { startDate, endDate } = dateRange();
+  try {
+    // 현재 위치의 하위 카테고리 목록 (루트면 고정 대분류 8개)
+    let list;
+    if (!ctState.stack.length) {
+      list = CATS.map(c => ({ cid: c.cid, name: c.name, leaf: false }));
+    } else {
+      list = await fetchChildren(ctState.stack[ctState.stack.length - 1].cid);
+    }
+    renderCatCrumb(list);
+    if (!list.length) { status.textContent = '더 이상 하위 분류가 없습니다.'; return; }
+
+    const jobs = [];
+    for (let i = 0; i < list.length; i += 3) {
+      const chunk = list.slice(i, i + 3);
+      jobs.push(datalab('shopping/categories', {
+        startDate, endDate, timeUnit:'week',
+        category: chunk.map(c => ({ name: c.name, param: [c.cid] })),
+        gender: 'f', ages: ['40','50','60'],
+      }));
+    }
+    const resAll = (await Promise.all(jobs)).flatMap(j => j.results || []);
+    status.textContent = '';
+    const labels = (resAll[0]?.data || []).map(d => d.period.slice(5));
+    makeChart('catChart', () => {
+      const pal = palette();
+      const datasets = resAll.map((r, i) => {
+        const vals = r.data.map(d => d.ratio);
+        const max = Math.max(...vals) || 1;
+        return { label: r.title, data: vals.map(v => +(v / max * 100).toFixed(1)),
+          borderColor: pal[i % pal.length], backgroundColor: pal[i % pal.length],
+          tension: .3, pointRadius: 2, borderWidth: 2 };
+      });
+      return { type:'line', data:{ labels, datasets },
+        options:{ maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+          scales:{ y:{ title:{display:true,text:'지수 (카테고리별 최대=100)'} } } } };
+    });
+
+    const growths = resAll.map(r => ({ name: r.title, g: growthOf(r.data) ?? 0 }))
+      .sort((a,b) => b.g - a.g);
+    makeChart('catGrowthChart', () => ({ type:'bar',
+      data:{ labels: growths.map(x=>x.name),
+        datasets:[{ data: growths.map(x=>+x.g.toFixed(1)),
+          backgroundColor: growths.map(x => x.g >= 0 ? cssVar('--up') : cssVar('--down')) }] },
+      options:{ indexAxis:'y', maintainAspectRatio:false, plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.raw}%`}}},
+        scales:{ x:{ title:{display:true,text:'최근 2주 클릭 증감률 (%)'} } } } }));
+  } catch (e) {
+    document.getElementById('catStatus').textContent =
+      state.datalabOff ? '데이터랩 API 권한 등록 후 이용 가능합니다.' : '조회 실패: ' + e.message;
+  }
+}
+
+/* ══════════════ ③ 키워드 심층분석 ══════════════ */
+function initDeepCat() {
+  document.getElementById('deepCat').innerHTML =
+    CATS.map(c => `<option value="${c.cid}">${c.name}</option>`).join('');
+  onDeepCatChange(1); // 기본 대분류의 세부 카테고리 채우기
+}
+/* 세부 카테고리 연동 선택: 대분류 → 중분류 → 소분류 (네이버 분류 체계) */
+async function populateChildSel(parentCid, selEl) {
+  selEl.style.display = 'none'; selEl.innerHTML = '';
+  try {
+    const children = await fetchChildren(parentCid);
+    if (!children.length) return;
+    selEl.innerHTML = '<option value="">└ 세부 전체</option>' +
+      children.map(c => `<option value="${c.cid}">${c.name}</option>`).join('');
+    selEl.style.display = '';
+  } catch(_) {}
+}
+async function onDeepCatChange(level) {
+  const s2 = document.getElementById('deepCat2'), s3 = document.getElementById('deepCat3');
+  if (level === 1) {
+    s3.style.display = 'none'; s3.innerHTML = '';
+    await populateChildSel(document.getElementById('deepCat').value, s2);
+  } else {
+    s3.style.display = 'none'; s3.innerHTML = '';
+    if (s2.value) await populateChildSel(s2.value, s3);
+  }
+}
+/* 가장 깊게 선택된 카테고리 cid (연령/성별 분석에 사용) */
+function deepCid() {
+  return document.getElementById('deepCat3').value ||
+         document.getElementById('deepCat2').value ||
+         document.getElementById('deepCat').value;
+}
+async function runDeep(kwOverride, cidOverride) {
+  const input = kwOverride || document.getElementById('deepInput').value.trim();
+  if (!input) return;
+  if (kwOverride) document.getElementById('deepInput').value = kwOverride;
+  if (cidOverride) { document.getElementById('deepCat').value = cidOverride; onDeepCatChange(1); }
+  const kws = input.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
+  const cid = deepCid();
+  const box = document.getElementById('deepResult');
+  box.innerHTML = '<div class="loading"><span class="spinner"></span>분석 중...</div>';
+  const { startDate, endDate } = dateRange();
+
+  const groups = kws.map(k => ({ groupName: k, keywords: [k] }));
+  const [target, all, ageRes, genderRes, shop] = await Promise.allSettled([
+    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups, gender:'f', ages:['7','8','9','10','11'] }),
+    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups }),
+    datalab('shopping/keyword/age',    { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
+    datalab('shopping/keyword/gender', { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
+    shopSearch(kws[0], 12),
+  ]);
+
+  let html = '';
+
+  // ── 트렌드 비교 차트 ──
+  if (target.status === 'fulfilled' && all.status === 'fulfilled') {
+    html += `<div class="grid2">
+      <div class="card" style="margin:0"><h2>4060 여성 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartT"></canvas></div></div>
+      <div class="card" style="margin:0"><h2>전체 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartA"></canvas></div></div>
+    </div>`;
+  } else if (state.datalabOff) {
+    html += `<div class="empty">검색 트렌드는 데이터랩 API 권한 등록 후 이용 가능합니다.</div>`;
+  }
+
+  // ── 적합도 + 연령/성별 구성 ──
+  let fitHtml = '';
+  if (ageRes.status === 'fulfilled') {
+    const byGroup = {};
+    (ageRes.value.results?.[0]?.data || []).forEach(d => {
+      byGroup[d.group] = (byGroup[d.group] || 0) + d.ratio;
+    });
+    const total = Object.values(byGroup).reduce((a,b) => a+b, 0);
+    if (total > 0) {
+      const fit = (['40','50','60'].reduce((a,g) => a + (byGroup[g]||0), 0) / total * 100);
+      let femaleShare = null;
+      if (genderRes.status === 'fulfilled') {
+        const g2 = {};
+        (genderRes.value.results?.[0]?.data || []).forEach(d => g2[d.group] = (g2[d.group]||0) + d.ratio);
+        const t2 = (g2.f||0) + (g2.m||0);
+        if (t2 > 0) femaleShare = g2.f / t2 * 100;
+      }
+      fitHtml = `<div class="grid2" style="margin-top:16px">
+        <div class="card" style="margin:0">
+          <h2>"${kws[0]}" 4060 타겟 적합도</h2>
+          <div class="desc">쇼핑 클릭 중 40·50·60대 비중${femaleShare!==null ? ` · 여성 비중 ${femaleShare.toFixed(0)}%` : ''}</div>
+          <div class="fit-score"><div class="num">${fit.toFixed(0)}점</div>
+          <div class="lbl">${fit >= 60 ? '핵심 타겟 상품 — 방송/프로모션 최우선 후보' : fit >= 40 ? '타겟 적합 — 소구점 보강 시 유효' : '타겟 비중 낮음 — 젊은층 상품일 가능성'}</div></div>
+        </div>
+        <div class="card" style="margin:0">
+          <h2>연령대별 클릭 구성</h2>
+          <div class="chart-box sm"><canvas id="deepAgeChart"></canvas></div>
+        </div>
+      </div>`;
+    }
+  }
+  html += fitHtml;
+
+  // ── 관련 상품 ──
+  if (shop.status === 'fulfilled' && shop.value.items?.length) {
+    html += `<div class="card" style="margin-top:16px"><h2>"${kws[0]}" 관련 상품 (네이버쇼핑 인기순 · 최저가 기준)</h2>
+      <div class="prod-grid">` + shop.value.items.map(prodCard).join('') + `</div></div>`;
+  }
+
+  box.innerHTML = html || '<div class="empty">분석 결과가 없습니다.</div>';
+  enrichLowestMalls(box); // 최저가 판매처 이름 백그라운드 조회
+
+  // 차트 렌더
+  if (target.status === 'fulfilled' && all.status === 'fulfilled') {
+    const mk = (id, results) => {
+      const labels = (results[0]?.data || []).map(d => d.period.slice(5));
+      makeChart(id, () => {
+        const pal = palette();
+        return { type:'line',
+          data:{ labels, datasets: results.map((r, i) => ({ label: r.title, data: r.data.map(d=>d.ratio),
+            borderColor: pal[i], backgroundColor: pal[i], tension:.3, pointRadius:2, borderWidth:2 })) },
+          options:{ maintainAspectRatio:false, scales:{ y:{ min:0 } } } };
+      });
+    };
+    mk('deepChartT', target.value.results || []);
+    mk('deepChartA', all.value.results || []);
+  }
+  if (fitHtml && ageRes.status === 'fulfilled') {
+    const byGroup = {};
+    (ageRes.value.results?.[0]?.data || []).forEach(d => byGroup[d.group] = (byGroup[d.group]||0) + d.ratio);
+    const order = ['10','20','30','40','50','60'];
+    makeChart('deepAgeChart', () => ({ type:'doughnut',
+      data:{ labels: order.map(g => g + '대'),
+        datasets:[{ data: order.map(g => +(byGroup[g]||0).toFixed(1)),
+          // 10~30대는 회색 계열, 40·50·60대는 테마 포인트 컬러
+          backgroundColor:[cssVar('--line'), cssVar('--line'), cssVar('--sub'), cssVar('--accent'), cssVar('--secondary'), cssVar('--tertiary')] }] },
+      options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } } }));
+  }
+}
+function prodCard(it) {
+  const isCatalog = it.productType === '1'; // 카탈로그 상품 = lprice가 네이버 전체 판매처 최저가
+  const mallHtml = isCatalog
+    ? `<span class="mall-name" data-pid="${it.productId}" data-q="${encodeURIComponent(esc(it.title))}" data-p="${it.lprice}">최저가 판매처 확인중…</span>`
+    : `<span class="mall-name">${mallLabel(it.mallName)}</span>`;
+  return `<a class="prod" href="${it.link}" target="_blank">
+    <img src="${it.image}" loading="lazy" onerror="this.style.display='none'">
+    <div class="p-body">
+      <div class="p-title">${esc(it.title)}</div>
+      <div class="p-price">${isCatalog ? '최저 ' + fmtPrice(it.lprice) + '<span class="low-badge">네이버 최저가</span>' : fmtPrice(it.lprice) + '<span class="low-badge" style="background:var(--line);color:var(--sub)">단일 판매처가</span>'}</div>
+      <div class="p-mall">${mallHtml}</div>
+    </div></a>`;
+}
+function mallLabel(name) {
+  const n = esc(name || '');
+  return /hmall|현대/i.test(n) ? `<span class="hmall">● ${n}</span>` : n;
+}
+/* 카탈로그 상품의 최저가 판매처 이름을 백그라운드로 채움 (동시 4개 제한, 서버 캐시) */
+async function enrichLowestMalls(container) {
+  const targets = [...container.querySelectorAll('.mall-name[data-pid]')];
+  const queue = [...targets];
+  async function worker() {
+    while (queue.length) {
+      const el = queue.shift();
+      try {
+        const r = await fetch(`/api/lowestmall?productId=${el.dataset.pid}&q=${el.dataset.q}&price=${el.dataset.p}`);
+        const j = await r.json();
+        el.innerHTML = j.mallName ? mallLabel(j.mallName) : '네이버쇼핑 (판매처 다수)';
+      } catch(_) { el.textContent = '네이버쇼핑 (판매처 다수)'; }
+      el.removeAttribute('data-pid');
+    }
+  }
+  await Promise.all(Array.from({ length: 4 }, worker));
+}
+
+/* ══════════════ ④ 브랜드/상품 추천 ══════════════ */
+/* 브랜드 탭 드릴다운: 선택 카테고리의 인기 검색어 중 상승 모멘텀 상위 5개로 집계 */
+const brandNav = drillNav('brandCrumb', 'brandChildChips', bState, () => {
+  if (bState.stack.length) loadBrandNode();
+  else document.getElementById('brandBody').innerHTML = '<div class="empty">카테고리를 선택하세요. (하위 탐색으로 세부 분류까지 가능)</div>';
+});
+async function loadBrandNode() {
+  const node = bState.stack[bState.stack.length - 1];
+  const box = document.getElementById('brandBody');
+  box.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어·브랜드 집계 중...</div>`;
+  try {
+    // 인기 검색어 10개 → 모멘텀 계산 → 상승 상위 5개 선정
+    const ranked = await fetchKeywordRank(node.cid, 10);
+    if (!ranked.length) throw new Error('인기 검색어 없음');
+    const growthMap = new Map();
+    let kws = ranked.slice(0, 5);
+    try {
+      const { startDate, endDate } = dateRange();
+      const jobs = [];
+      for (let i = 0; i < ranked.length; i += 5) {
+        const chunk = ranked.slice(i, i + 5);
+        jobs.push(datalab('shopping/keywords', {
+          startDate, endDate, timeUnit:'week', category: node.cid,
+          keyword: chunk.map(k => ({ name: k, param: [k] })),
+          gender: 'f', ages: ['40','50','60'],
+        }));
+      }
+      const res = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
+      res.forEach(r => growthMap.set(r.title, growthOf(r.data)));
+      kws = [...ranked].sort((a, b) => (growthMap.get(b) ?? -999) - (growthMap.get(a) ?? -999)).slice(0, 5);
+    } catch(_) {} // 모멘텀 실패 시 인기순 상위 5개 사용
+
+    const results = await Promise.allSettled(kws.map(k => shopSearch(k, 20)));
+    if (bState.stack.length && bState.stack[bState.stack.length - 1].cid !== node.cid) return; // 이동 중 응답 무시
+    const brands = {}, prods = [], seen = new Set();
+    results.forEach((s, i) => {
+      if (s.status !== 'fulfilled') return;
+      const kw = kws[i], g = growthMap.get(kw) ?? 0;
+      for (const it of s.value.items || []) {
+        if (!seen.has(it.productId)) { seen.add(it.productId); prods.push({ ...it, kw }); }
+        const b = (it.brand || '').trim();
+        if (!b) continue;
+        brands[b] = brands[b] || { count: 0, kws: new Set(), prices: [], score: 0 };
+        brands[b].count++;
+        brands[b].kws.add(kw);
+        brands[b].prices.push(+it.lprice);
+        brands[b].score += 1 + Math.max(g ?? 0, 0) / 20; // 상승 키워드 노출 가중
+      }
+    });
+    const ranked2 = Object.entries(brands)
+      .filter(([, v]) => v.count >= 2)
+      .sort((a, b) => b[1].kws.size - a[1].kws.size || b[1].score - a[1].score)
+      .slice(0, 12);
+
+    let html = `<div class="desc" style="margin-bottom:10px">집계 기준 키워드 (${node.name} 인기 검색어 중 상승 상위): ${kws.map(k=>`<b>${k}</b>`).join(' · ')}</div>`;
+    if (ranked2.length) {
+      html += `<h2 style="font-size:15px;margin:14px 0 10px">추천 브랜드 <span style="font-weight:400;font-size:12px;color:var(--sub)">— 상승 키워드 다중 노출 순</span></h2>
+        <div class="brand-list">` + ranked2.map(([name, v]) => {
+          const med = v.prices.sort((a,b)=>a-b)[Math.floor(v.prices.length/2)];
+          return `<div class="brand-card"><div class="b-name">${esc(name)}</div>
+            <div class="b-meta">노출 ${v.count}회 · 최저가 중간값 ${fmtPrice(med)}</div>
+            <div class="b-kws">${[...v.kws].map(k=>`<span>${k}</span>`).join('')}</div></div>`;
+        }).join('') + '</div>';
+    }
+    prods.sort((a, b) => (growthMap.get(b.kw) ?? 0) - (growthMap.get(a.kw) ?? 0));
+    html += `<h2 style="font-size:15px;margin:20px 0 10px">주목 상품 <span style="font-weight:400;font-size:12px;color:var(--sub)">— 네이버쇼핑 최저가 기준</span></h2><div class="prod-grid">` +
+      prods.slice(0, 18).map(prodCard).join('') + '</div>';
+    box.innerHTML = html;
+    enrichLowestMalls(box); // 최저가 판매처 이름 백그라운드 조회
+  } catch (e) {
+    box.innerHTML = `<div class="empty">집계 실패: ${e.message}</div>`;
+  }
+}
+
+/* ══════════════ 키워드 상세 모달 ══════════════ */
+async function openDetail(kw, cat) {
+  // 심층분석 탭 재사용: 탭 전환 + 자동 실행.
+  // 드릴다운의 세부 분류 cid는 심층분석 셀렉트(대분류 목록)에 없으므로 소속 대분류로 변환
+  let rootCid = cat.cid;
+  if (!CATS.some(c => c.cid === rootCid)) {
+    rootCid = state.stack[0]?.cid || sState.stack[0]?.cid || bState.stack[0]?.cid || CATS[0].cid;
+  }
+  document.querySelector('[data-panel="pDeep"]').click();
+  runDeep(kw, rootCid);
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+
+/* ══════════════ 초기화 ══════════════ */
+applyTheme(localStorage.getItem('theme4060') || 'toss');
+initDeepCat();
+bestNav();
+seasonNav();
+brandNav();
+document.getElementById('brandBody').innerHTML = '<div class="empty">카테고리를 선택하세요. (하위 탐색으로 세부 분류까지 가능)</div>';
+loadBest();
+</script>
+</body>
+</html>

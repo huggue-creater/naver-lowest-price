@@ -2,3 +2,4 @@
 corp-root-ca.pem
 node_modules/
 .claude/
+4060-insight/cache.json
