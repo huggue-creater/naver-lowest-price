@@ -25,8 +25,9 @@ for (const envPath of [path.join(__dirname, '..', '.env'), path.join(__dirname, 
     break;
   } catch(_) {}
 }
-const NAVER_ID  = process.env.NAVER_ID  || '';
-const NAVER_SEC = process.env.NAVER_SEC || '';
+// trim: CI 시크릿에 개행 등이 섞여도 헤더 오류가 나지 않도록
+const NAVER_ID  = (process.env.NAVER_ID  || '').trim();
+const NAVER_SEC = (process.env.NAVER_SEC || '').trim();
 if (!NAVER_ID || !NAVER_SEC) {
   console.error('❌ NAVER_ID / NAVER_SEC 가 없습니다. (.env 또는 환경변수)');
   process.exit(1);
@@ -266,6 +267,11 @@ async function shopJob(q, display) {
     }
   }
 
+  // 대량 실패 시 기존 정상 스냅샷을 덮어쓰지 않도록 저장 전에 중단
+  if (Object.keys(entries).length < 100) {
+    console.error(`❌ 수집 항목 ${Object.keys(entries).length}개(100개 미만) — 스냅샷 갱신을 중단합니다. (호출 ${calls}회, 실패 ${fails}회)`);
+    process.exit(1);
+  }
   const out = {
     meta: { generatedAt: new Date().toISOString(), range10: r10, range65: r65 },
     entries,
@@ -274,5 +280,4 @@ async function shopJob(q, display) {
   fs.writeFileSync(file, JSON.stringify(out));
   const mb = (fs.statSync(file).size / 1024 / 1024).toFixed(2);
   console.log(`\n✅ snapshot.json 저장 완료 — 항목 ${Object.keys(entries).length}개, ${mb}MB, 데이터랩 호출 ${calls}회, 실패 ${fails}회`);
-  if (!Object.keys(entries).length) { console.error('❌ 수집된 데이터가 없습니다.'); process.exit(1); }
 })();
