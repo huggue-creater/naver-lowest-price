@@ -440,7 +440,7 @@ function drillNav(crumbId, chipsId, obj, onChange) {
     const crumbs = [{ cid: null, name: '🏠 전체' }, ...obj.stack];
     crumbEl.innerHTML = '<span class="chips-label">카테고리</span>' + crumbs.map((c, i) => {
       const last = i === crumbs.length - 1;
-      return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${c.name}</button>` +
+      return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${esc(c.name)}</button>` +
         (last ? '' : '<span style="color:var(--sub)">›</span>');
     }).join('');
     crumbEl.querySelectorAll('.chip').forEach(b => b.onclick = () => {
@@ -454,7 +454,7 @@ function drillNav(crumbId, chipsId, obj, onChange) {
         : CATS.map(c => ({ cid: c.cid, name: c.name }));
     } catch(_) {}
     chipsEl.innerHTML = children.length
-      ? '<span class="chips-label">하위 탐색</span>' + children.map((c, i) => `<button class="chip" data-i="${i}">${c.name} ›</button>`).join('')
+      ? '<span class="chips-label">하위 탐색</span>' + children.map((c, i) => `<button class="chip" data-i="${i}">${esc(c.name)} ›</button>`).join('')
       : '';
     chipsEl.querySelectorAll('.chip').forEach(b => b.onclick = () => {
       const c = children[+b.dataset.i];
@@ -570,7 +570,20 @@ function growthBadge(g) {
   const arrow = g > 3 ? '▲' : g < -3 ? '▼' : '·';
   return `<span class="growth ${cls}">${arrow} ${Math.abs(g).toFixed(1)}%</span>`;
 }
-function esc(s) { return (s||'').replace(/<[^>]*>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"'); }
+/* HTML 살균: 네이버 하이라이트(<b>) 등 태그를 제거한 뒤 특수문자를 인코딩한다.
+   ⚠️ 절대 엔티티를 디코딩하지 말 것 — 판매자가 상품명/판매처명에 &lt;img onerror=..&gt;
+   같은 인코딩된 마크업을 심어 XSS를 유발할 수 있다. (텍스트 컨텍스트 전용) */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/<[^>]*>/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+/* 속성값(특히 href/src)용: http/https만 허용해 javascript: 등 위험 스킴을 차단 */
+function safeUrl(u) {
+  const s = String(u || '').trim();
+  return /^https?:\/\//i.test(s) ? esc(s) : '#';
+}
 function fmtPrice(p) { return Number(p).toLocaleString('ko-KR') + '원'; }
 function drawSpark(canvas, vals, color) {
   const ctx = canvas.getContext('2d'), W = canvas.width = 110, H = canvas.height = 30;
@@ -599,7 +612,7 @@ function switchTab(btn) {
   if (btn.dataset.panel === 'pSeason' && !sState.loaded) loadSeason();
 }
 async function hardRefresh() {
-  if (!STATIC) await fetch('/api/cache/clear');
+  if (!STATIC) await fetch('/api/cache/clear', { method: 'POST' });
   location.reload();
 }
 
@@ -743,7 +756,7 @@ const bestNav = drillNav('bestCrumb', 'bestChildChips', state, () => {
 async function loadBestDrill() {
   const node = state.stack[state.stack.length - 1];
   const body = document.getElementById('bestBody');
-  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어(4060 여성) 조회 중...</div>`;
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어(4060 여성) 조회 중...</div>`;
   const { startDate, endDate } = dateRange();
   try {
     const kws = await fetchKeywordRank(node.cid, 20);
@@ -819,7 +832,7 @@ function renderBestTable() {
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
-        <td class="cell-kw"><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td class="cell-kw"><span class="kw-name">${esc(r.kw)}</span><span class="cat-tag">${esc(r.cat.name)}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
         <td class="cell-half" data-label="최근 2주 모멘텀">${growthBadge(r.growth)}</td>
         <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, state.sortBy, state.sortAges)}</td>
         <td class="cell-half" data-label="10주 추이"><canvas class="spark"></canvas></td>
@@ -837,9 +850,9 @@ function renderInsights(rows) {
   ups.forEach(r => catCount[r.cat.name] = (catCount[r.cat.name] || 0) + 1);
   const hotCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0][0];
   const list = [];
-  list.push(`<li><span class="tag sale">판매</span><b>${ups.slice(0,3).map(r=>r.kw).join(' · ')}</b> 검색 관심이 최근 2주 급상승 — 관련 상품 소싱/재고 점검 및 프로모션 우선 검토</li>`);
-  list.push(`<li><span class="tag mkt">마케팅</span>상승 키워드 <b>${ups.map(r=>`"${r.kw}"`).join(', ')}</b> 를 검색광고·상품명·방송 타이틀 카피에 반영하면 4060 여성 유입 효율 기대</li>`);
-  list.push(`<li><span class="tag pgm">편성</span>모멘텀 최다 카테고리는 <b>${hotCat}</b> — 4060 여성 시청 집중 시간대(${PGM_SLOT[hotCat] || '오전·저녁'}) 편성 확대 검토</li>`);
+  list.push(`<li><span class="tag sale">판매</span><b>${ups.slice(0,3).map(r=>esc(r.kw)).join(' · ')}</b> 검색 관심이 최근 2주 급상승 — 관련 상품 소싱/재고 점검 및 프로모션 우선 검토</li>`);
+  list.push(`<li><span class="tag mkt">마케팅</span>상승 키워드 <b>${ups.map(r=>`"${esc(r.kw)}"`).join(', ')}</b> 를 검색광고·상품명·방송 타이틀 카피에 반영하면 4060 여성 유입 효율 기대</li>`);
+  list.push(`<li><span class="tag pgm">편성</span>모멘텀 최다 카테고리는 <b>${esc(hotCat)}</b> — 4060 여성 시청 집중 시간대(${PGM_SLOT[hotCat] || '오전·저녁'}) 편성 확대 검토</li>`);
   document.getElementById('insightList').innerHTML = list.join('');
   document.getElementById('insightBox').style.display = 'block';
 }
@@ -902,7 +915,7 @@ const seasonNav = drillNav('seasonCrumb', 'seasonChildChips', sState, () => {
 async function loadSeasonDrill() {
   const node = sState.stack[sState.stack.length - 1];
   const body = document.getElementById('seasonBody');
-  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어의 전년 데이터 조회 중...</div>`;
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어의 전년 데이터 조회 중...</div>`;
   const { startDate, endDate } = dateRangeSeason();
   try {
     const kws = await fetchKeywordRank(node.cid, 20);
@@ -1034,7 +1047,7 @@ function renderSeason() {
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
-        <td class="cell-kw"><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td class="cell-kw"><span class="kw-name">${esc(r.kw)}</span><span class="cat-tag">${esc(r.cat.name)}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
         <td class="cell-half" data-label="올해 vs 전년 동시즌">${growthBadge(r.calc.yoy)}</td>
         <td class="cell-half" data-label="전년 패턴: ${sState.lead}개월 후(${mLabel})">${growthBadge(r.calc.lift)}</td>
         <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, sState.sortBy, sState.sortAges)}</td>
@@ -1057,10 +1070,10 @@ function renderSeasonInsights(rows, mLabel) {
   const box = document.getElementById('seasonInsight');
   if (!hot.length) { box.style.display = 'none'; return; }
   const list = [];
-  list.push(`<li><span class="tag pgm">편성</span>전년 패턴상 <b>${mLabel}</b>에 검색이 급증한 키워드: <b>${hot.map(r => `${r.kw}(+${r.calc.lift.toFixed(0)}%)`).join(' · ')}</b> — 리드타임 ${sState.lead}개월을 고려하면 <b>지금이 편성 확정·상품 준비 시점</b>입니다.</li>`);
+  list.push(`<li><span class="tag pgm">편성</span>전년 패턴상 <b>${mLabel}</b>에 검색이 급증한 키워드: <b>${hot.map(r => `${esc(r.kw)}(+${r.calc.lift.toFixed(0)}%)`).join(' · ')}</b> — 리드타임 ${sState.lead}개월을 고려하면 <b>지금이 편성 확정·상품 준비 시점</b>입니다.</li>`);
   list.push(`<li><span class="tag sale">판매</span>위 키워드 관련 상품의 MD 소싱·재고·조건협의를 이번 주 안에 착수하면 전년 성수기 진입 전에 방송 준비를 마칠 수 있습니다.</li>`);
   const yoyUp = rows.filter(r => r.calc.yoy !== null && r.calc.yoy > 20).slice(0, 3);
-  if (yoyUp.length) list.push(`<li><span class="tag mkt">마케팅</span>올해가 전년 동시즌보다 이미 높은 키워드: <b>${yoyUp.map(r => r.kw).join(' · ')}</b> — 전년보다 시즌이 빨리/강하게 오고 있어 예상 물량 상향 검토.</li>`);
+  if (yoyUp.length) list.push(`<li><span class="tag mkt">마케팅</span>올해가 전년 동시즌보다 이미 높은 키워드: <b>${yoyUp.map(r => esc(r.kw)).join(' · ')}</b> — 전년보다 시즌이 빨리/강하게 오고 있어 예상 물량 상향 검토.</li>`);
   document.getElementById('seasonInsightList').innerHTML = list.join('');
   box.style.display = 'block';
 }
@@ -1080,7 +1093,7 @@ function renderCatCrumb(childList) {
   const crumbs = [{ cid: null, name: '🏠 대분류' }, ...ctState.stack];
   el.innerHTML = '<span class="chips-label">위치</span>' + crumbs.map((c, i) => {
     const last = i === crumbs.length - 1;
-    return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${c.name}</button>` +
+    return `<button class="chip ${last ? 'on' : ''}" data-i="${i}">${esc(c.name)}</button>` +
       (last ? '' : '<span style="color:var(--sub)">›</span>');
   }).join('');
   el.querySelectorAll('.chip').forEach(b => b.onclick = () => {
@@ -1090,7 +1103,7 @@ function renderCatCrumb(childList) {
   const chipsEl = document.getElementById('catChildChips');
   if (!childList || !childList.length) { chipsEl.innerHTML = ''; return; }
   chipsEl.innerHTML = '<span class="chips-label">하위 탐색</span>' + childList.map((c, i) =>
-    `<button class="chip" data-i="${i}" ${c.leaf ? 'disabled style="opacity:.45;cursor:default"' : ''}>${c.name}${c.leaf ? '' : ' ›'}</button>`).join('');
+    `<button class="chip" data-i="${i}" ${c.leaf ? 'disabled style="opacity:.45;cursor:default"' : ''}>${esc(c.name)}${c.leaf ? '' : ' ›'}</button>`).join('');
   chipsEl.querySelectorAll('.chip:not([disabled])').forEach(b => b.onclick = () => {
     ctState.stack.push(childList[+b.dataset.i]);
     loadCategories();
@@ -1167,7 +1180,7 @@ async function populateChildSel(parentCid, selEl) {
     const children = await fetchChildren(parentCid);
     if (!children.length) return;
     selEl.innerHTML = '<option value="">└ 세부 전체</option>' +
-      children.map(c => `<option value="${c.cid}">${c.name}</option>`).join('');
+      children.map(c => `<option value="${esc(c.cid)}">${esc(c.name)}</option>`).join('');
     selEl.style.display = '';
   } catch(_) {}
 }
@@ -1242,7 +1255,7 @@ async function runDeep(kwOverride, cidOverride) {
       }
       fitHtml = `<div class="grid2" style="margin-top:16px">
         <div class="card" style="margin:0">
-          <h2>"${kws[0]}" 4060 타겟 적합도</h2>
+          <h2>"${esc(kws[0])}" 4060 타겟 적합도</h2>
           <div class="desc">쇼핑 클릭 중 40·50·60대 비중${femaleShare!==null ? ` · 여성 비중 ${femaleShare.toFixed(0)}%` : ''}</div>
           <div class="fit-score"><div class="num">${fit.toFixed(0)}점</div>
           <div class="lbl">${fit >= 60 ? '핵심 타겟 상품 — 방송/프로모션 최우선 후보' : fit >= 40 ? '타겟 적합 — 소구점 보강 시 유효' : '타겟 비중 낮음 — 젊은층 상품일 가능성'}</div></div>
@@ -1258,7 +1271,7 @@ async function runDeep(kwOverride, cidOverride) {
 
   // ── 관련 상품 ──
   if (shop.status === 'fulfilled' && shop.value.items?.length) {
-    html += `<div class="card" style="margin-top:16px"><h2>"${kws[0]}" 관련 상품 (네이버쇼핑 인기순 · 최저가 기준)</h2>
+    html += `<div class="card" style="margin-top:16px"><h2>"${esc(kws[0])}" 관련 상품 (네이버쇼핑 인기순 · 최저가 기준)</h2>
       <div class="prod-grid">` + shop.value.items.map(prodCard).join('') + `</div></div>`;
   }
 
@@ -1294,11 +1307,12 @@ async function runDeep(kwOverride, cidOverride) {
 }
 function prodCard(it) {
   const isCatalog = it.productType === '1'; // 카탈로그 상품 = lprice가 네이버 전체 판매처 최저가
+  // 모든 속성값은 esc()로 인코딩, href/src는 safeUrl()로 스킴 검증 (판매자 제어 데이터)
   const mallHtml = isCatalog
-    ? `<span class="mall-name" data-pid="${it.productId}" data-q="${encodeURIComponent(esc(it.title))}" data-p="${it.lprice}">최저가 판매처 확인중…</span>`
+    ? `<span class="mall-name" data-pid="${esc(it.productId)}" data-q="${encodeURIComponent(esc(it.title))}" data-p="${esc(it.lprice)}">최저가 판매처 확인중…</span>`
     : `<span class="mall-name">${mallLabel(it.mallName)}</span>`;
-  return `<a class="prod" href="${it.link}" target="_blank">
-    <img src="${it.image}" loading="lazy" onerror="this.style.display='none'">
+  return `<a class="prod" href="${safeUrl(it.link)}" target="_blank" rel="noopener noreferrer">
+    <img src="${safeUrl(it.image)}" loading="lazy" onerror="this.style.display='none'">
     <div class="p-body">
       <div class="p-title">${esc(it.title)}</div>
       <div class="p-price">${isCatalog ? '최저 ' + fmtPrice(it.lprice) + '<span class="low-badge">네이버 최저가</span>' : fmtPrice(it.lprice) + '<span class="low-badge" style="background:var(--line);color:var(--sub)">단일 판매처가</span>'}</div>
@@ -1336,7 +1350,7 @@ const brandNav = drillNav('brandCrumb', 'brandChildChips', bState, () => {
 async function loadBrandNode() {
   const node = bState.stack[bState.stack.length - 1];
   const box = document.getElementById('brandBody');
-  box.innerHTML = `<div class="loading"><span class="spinner"></span>"${node.name}" 인기 검색어·브랜드 집계 중...</div>`;
+  box.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어·브랜드 집계 중...</div>`;
   try {
     // 인기 검색어 10개 → 모멘텀 계산 → 상승 상위 5개 선정
     const ranked = await fetchKeywordRank(node.cid, 10);
@@ -1381,14 +1395,14 @@ async function loadBrandNode() {
       .sort((a, b) => b[1].kws.size - a[1].kws.size || b[1].score - a[1].score)
       .slice(0, 12);
 
-    let html = `<div class="desc" style="margin-bottom:10px">집계 기준 키워드 (${node.name} 인기 검색어 중 상승 상위): ${kws.map(k=>`<b>${k}</b>`).join(' · ')}</div>`;
+    let html = `<div class="desc" style="margin-bottom:10px">집계 기준 키워드 (${esc(node.name)} 인기 검색어 중 상승 상위): ${kws.map(k=>`<b>${esc(k)}</b>`).join(' · ')}</div>`;
     if (ranked2.length) {
       html += `<h2 style="font-size:15px;margin:14px 0 10px">추천 브랜드 <span style="font-weight:400;font-size:12px;color:var(--sub)">— 상승 키워드 다중 노출 순</span></h2>
         <div class="brand-list">` + ranked2.map(([name, v]) => {
           const med = v.prices.sort((a,b)=>a-b)[Math.floor(v.prices.length/2)];
           return `<div class="brand-card"><div class="b-name">${esc(name)}</div>
             <div class="b-meta">노출 ${v.count}회 · 최저가 중간값 ${fmtPrice(med)}</div>
-            <div class="b-kws">${[...v.kws].map(k=>`<span>${k}</span>`).join('')}</div></div>`;
+            <div class="b-kws">${[...v.kws].map(k=>`<span>${esc(k)}</span>`).join('')}</div></div>`;
         }).join('') + '</div>';
     }
     prods.sort((a, b) => (growthMap.get(b.kw) ?? 0) - (growthMap.get(a.kw) ?? 0));
