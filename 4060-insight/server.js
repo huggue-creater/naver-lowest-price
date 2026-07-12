@@ -296,5 +296,6 @@ http.createServer(async (req, res) => {
 }).listen(PORT, () => {
   console.log('\n✅  4060 인사이트 대시보드 실행 중 → http://localhost:' + PORT);
   console.log('   데이터랩 API 미연동 시 대시보드 상단 안내를 따라 권한을 추가하세요.\n');
-  require('child_process').exec(`start http://localhost:${PORT}`);
+  // 자동 시작(백그라운드) 모드에서는 브라우저를 띄우지 않음
+  if (!process.env.NO_OPEN) require('child_process').exec(`start http://localhost:${PORT}`);
 });

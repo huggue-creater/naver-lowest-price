@@ -173,6 +173,49 @@
   .modal { background:var(--card); border-radius:var(--radius); max-width:860px; width:100%; padding:24px; position:relative; }
   .modal .close { position:absolute; top:14px; right:16px; border:none; background:none; font-size:22px; color:var(--sub); }
   .modal h2 { font-size:19px; margin-bottom:2px; }
+
+  /* ═══════════ 모바일 반응형 (≤760px) ═══════════ */
+  @media (max-width:760px) {
+    body { font-size:13.5px; -webkit-text-size-adjust:100%; }
+    .wrap { padding:12px 10px 48px; }
+    header { gap:8px; }
+    header h1 { font-size:19px; }
+    .head-right { margin-left:0; width:100%; justify-content:space-between; }
+    .sub-note { font-size:11.5px; }
+    .tabs { gap:2px; margin:0 -10px 16px; padding:0 10px; -webkit-overflow-scrolling:touch; }
+    .tab { padding:10px 12px; font-size:13.5px; }
+    .card { padding:15px 13px; }
+    .card h2 { font-size:15px; }
+    .insight-box { padding:14px; }
+    .insight-box li { margin-left:14px; font-size:12.5px; }
+    .chips { gap:5px; }
+    .chip { padding:6px 11px; font-size:12px; }
+    .chart-box { height:250px; }
+    .chart-box.sm { height:210px; }
+    .search-row input[type=text] { min-width:100%; }
+    .search-row select { flex:1; min-width:0; }
+    .prod-grid { grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:9px; }
+    .brand-list { grid-template-columns:1fr 1fr; }
+    .modal-bg.show { padding:14px 8px; }
+    .modal { padding:20px 14px; }
+    .agebar { width:100%; max-width:220px; }
+    .fit-score .num { font-size:34px; }
+
+    /* 키워드 표 → 카드형 변환 (가로 스크롤 없이 읽히도록) */
+    table.resp, table.resp tbody { display:block; }
+    table.resp thead { display:none; }
+    table.resp tr.kw-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px;
+      border:1px solid var(--line); border-radius:calc(var(--radius) * .65);
+      padding:12px 14px; margin-bottom:10px; background:var(--card); box-shadow:var(--shadow); }
+    table.resp td { display:block; border:none; padding:0; }
+    table.resp td.rank { width:auto; font-size:15px; order:0; }
+    table.resp td.cell-kw { order:1; flex:1 1 55%; }
+    table.resp td.cell-half { order:2; flex:1 1 40%; min-width:128px; }
+    table.resp td.cell-full { order:9; flex:1 1 100%; }
+    table.resp td.cell-btn { display:none; }
+    table.resp td[data-label]::before { content:attr(data-label); display:block;
+      font-size:10.5px; color:var(--sub); font-weight:600; margin-bottom:2px; }
+  }
 </style>
 </head>
 <body data-theme="toss">
@@ -424,6 +467,11 @@ function drillNav(crumbId, chipsId, obj, onChange) {
 
 /* 카테고리별 네이버 인기 검색어 TOP (4060 여성, 최근 4주, 서버 캐시) */
 async function fetchKeywordRank(cid, count = 20) {
+  if (STATIC) {
+    const hit = SNAP?.entries?.[`rank|${cid}|${count}`];
+    if (hit) return (hit.ranks || []).map(x => x.keyword);
+    throw new Error(STATIC_MSG);
+  }
   const r = await fetch(`/api/keywordrank?cid=${cid}&count=${count}`);
   if (!r.ok) throw new Error('인기 검색어 조회 실패');
   return ((await r.json()).ranks || []).map(x => x.keyword);
@@ -461,7 +509,30 @@ function dateRange() {
   const start = new Date(end); start.setDate(end.getDate() - 69); // 10주(70일) 전 월요일
   return { startDate: ymd(start), endDate: ymd(end) };
 }
+/* ══ 정적(스냅샷) 모드: GitHub Pages 등 서버 없는 환경 ══
+   GitHub Actions(snapshot.js)가 미리 수집한 snapshot.json을 읽어 동작한다.
+   snapKey는 snapshot.js와 동일해야 함 — 날짜 대신 기간 길이(일수)로 매칭 */
+const STATIC = location.hostname.endsWith('.github.io') || new URLSearchParams(location.search).has('static');
+let SNAP = null;
+function snapKey(route, body) {
+  const days = Math.round((new Date(body.endDate) - new Date(body.startDate)) / 864e5);
+  const b = {};
+  for (const k of Object.keys(body).sort()) if (k !== 'startDate' && k !== 'endDate') b[k] = body[k];
+  return route + '|' + days + '|' + JSON.stringify(b);
+}
+async function loadSnapshot() {
+  const r = await fetch('./snapshot.json?v=' + Math.floor(Date.now() / 600000)); // 10분 캐시 무효화
+  if (!r.ok) throw new Error('snapshot.json 로드 실패');
+  SNAP = await r.json();
+}
+const STATIC_MSG = '외부 열람(스냅샷) 모드에서는 지원되지 않습니다 — 로컬 서버(localhost:3001)에서 이용 가능';
+
 async function datalab(route, body) {
+  if (STATIC) {
+    const hit = SNAP?.entries?.[snapKey(route, body)];
+    if (hit) return hit;
+    throw new Error(STATIC_MSG);
+  }
   const r = await fetch('/api/datalab/' + route, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -475,6 +546,11 @@ async function datalab(route, body) {
   return j;
 }
 async function shopSearch(q, display = 20) {
+  if (STATIC) {
+    const hit = SNAP?.entries?.[`shop|${q}|${display}`];
+    if (hit) return hit;
+    throw new Error(STATIC_MSG);
+  }
   const r = await fetch(`/api/shop?query=${encodeURIComponent(q)}&display=${display}`);
   if (!r.ok) throw new Error('쇼핑 검색 실패');
   return r.json();
@@ -523,7 +599,7 @@ function switchTab(btn) {
   if (btn.dataset.panel === 'pSeason' && !sState.loaded) loadSeason();
 }
 async function hardRefresh() {
-  await fetch('/api/cache/clear');
+  if (!STATIC) await fetch('/api/cache/clear');
   location.reload();
 }
 
@@ -562,7 +638,9 @@ async function loadBest() {
     state.best = rows;
     renderBestTable();
     renderInsights(rows);
-    document.getElementById('statusBadge').textContent = `기준: ${startDate} ~ ${endDate} (주간)`;
+    document.getElementById('statusBadge').textContent = STATIC && SNAP?.meta
+      ? `외부 열람 · 데이터 갱신: ${new Date(SNAP.meta.generatedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' })}`
+      : `기준: ${startDate} ~ ${endDate} (주간)`;
     ensureFits(rows, refreshFitViews); // 타겟 적합도(연령 구성)는 백그라운드에서 채워짐
   } catch (e) {
     body.innerHTML = state.datalabOff
@@ -737,15 +815,15 @@ function renderBestTable() {
   if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
   const sortLbl = sort === 'age' ? `${state.sortAges.join('·')}대 비중순`
     : { momentum:'모멘텀순', fit:'4060 적합도순' }[sort];
-  body.innerHTML = `<table><thead><tr><th>${sortLbl}</th><th>키워드</th><th>최근 2주 모멘텀</th><th>타겟 적합도 · 연령 구성</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
+  body.innerHTML = `<table class="resp"><thead><tr><th>${sortLbl}</th><th>키워드</th><th>최근 2주 모멘텀</th><th>타겟 적합도 · 연령 구성</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
-        <td><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
-        <td>${growthBadge(r.growth)}</td>
-        <td>${fitCell(r, state.sortBy, state.sortAges)}</td>
-        <td><canvas class="spark"></canvas></td>
-        <td style="text-align:right"><button class="btn" style="padding:5px 10px;font-size:12px">상세 →</button></td>
+        <td class="cell-kw"><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td class="cell-half" data-label="최근 2주 모멘텀">${growthBadge(r.growth)}</td>
+        <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, state.sortBy, state.sortAges)}</td>
+        <td class="cell-half" data-label="10주 추이"><canvas class="spark"></canvas></td>
+        <td class="cell-btn" style="text-align:right"><button class="btn" style="padding:5px 10px;font-size:12px">상세 →</button></td>
       </tr>`).join('') + '</tbody></table>';
   body.querySelectorAll('.kw-row').forEach((tr, i) => {
     drawSpark(tr.querySelector('canvas'), rows[i].series, (rows[i].growth ?? 0) > 3 ? cssVar('--up') : cssVar('--sub'));
@@ -952,16 +1030,16 @@ function renderSeason() {
   const targetMonth = new Date(); targetMonth.setMonth(targetMonth.getMonth() + sState.lead);
   const mLabel = `${targetMonth.getMonth() + 1}월`;
   const sortLbl = sState.sortBy === 'lift' ? '상승률순' : sState.sortBy === 'fit' ? '적합도순' : `${sState.sortAges.join('·')}대 비중순`;
-  body.innerHTML = `<table><thead><tr><th>${sortLbl}</th><th>키워드</th><th>올해 vs 전년 동시즌</th><th>전년 패턴: ${sState.lead}개월 후(${mLabel}) 상승률</th><th>타겟 적합도 · 연령 구성</th><th>전년 시즌 흐름</th><th>편성 판단</th></tr></thead><tbody>` +
+  body.innerHTML = `<table class="resp"><thead><tr><th>${sortLbl}</th><th>키워드</th><th>올해 vs 전년 동시즌</th><th>전년 패턴: ${sState.lead}개월 후(${mLabel}) 상승률</th><th>타겟 적합도 · 연령 구성</th><th>전년 시즌 흐름</th><th>편성 판단</th></tr></thead><tbody>` +
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
-        <td><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
-        <td>${growthBadge(r.calc.yoy)}</td>
-        <td>${growthBadge(r.calc.lift)}</td>
-        <td>${fitCell(r, sState.sortBy, sState.sortAges)}</td>
-        <td><canvas class="spark" style="width:150px"></canvas></td>
-        <td>${seasonAction(r.calc.lift)}</td>
+        <td class="cell-kw"><span class="kw-name">${r.kw}</span><span class="cat-tag">${r.cat.name}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
+        <td class="cell-half" data-label="올해 vs 전년 동시즌">${growthBadge(r.calc.yoy)}</td>
+        <td class="cell-half" data-label="전년 패턴: ${sState.lead}개월 후(${mLabel})">${growthBadge(r.calc.lift)}</td>
+        <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, sState.sortBy, sState.sortAges)}</td>
+        <td class="cell-half" data-label="전년 시즌 흐름"><canvas class="spark" style="width:150px"></canvas></td>
+        <td class="cell-half" data-label="편성 판단">${seasonAction(r.calc.lift)}</td>
       </tr>`).join('') + '</tbody></table>';
   body.querySelectorAll('.kw-row').forEach((tr, i) => {
     const r = rows[i], c = r.calc;
@@ -991,6 +1069,7 @@ function renderSeasonInsights(rows, mLabel) {
 const ctState = { stack: [] }; // 드릴다운 경로. 비어있으면 대분류 8개
 
 async function fetchChildren(cid) {
+  if (STATIC) return []; // 스냅샷 모드: 하위 탐색 미지원 → 칩 숨김
   const r = await fetch('/api/category?cid=' + cid);
   if (!r.ok) throw new Error('카테고리 트리 조회 실패');
   return (await r.json()).children || [];
@@ -1109,6 +1188,10 @@ function deepCid() {
          document.getElementById('deepCat').value;
 }
 async function runDeep(kwOverride, cidOverride) {
+  if (STATIC) {
+    document.getElementById('deepResult').innerHTML = `<div class="empty">${STATIC_MSG}</div>`;
+    return;
+  }
   const input = kwOverride || document.getElementById('deepInput').value.trim();
   if (!input) return;
   if (kwOverride) document.getElementById('deepInput').value = kwOverride;
@@ -1332,13 +1415,20 @@ async function openDetail(kw, cat) {
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
 
 /* ══════════════ 초기화 ══════════════ */
-applyTheme(localStorage.getItem('theme4060') || 'toss');
-initDeepCat();
-bestNav();
-seasonNav();
-brandNav();
-document.getElementById('brandBody').innerHTML = '<div class="empty">카테고리를 선택하세요. (하위 탐색으로 세부 분류까지 가능)</div>';
-loadBest();
+(async () => {
+  applyTheme(localStorage.getItem('theme4060') || 'toss');
+  if (STATIC) {
+    try { await loadSnapshot(); } catch(_) {}
+    document.querySelector('.sub-note').innerHTML +=
+      ' · <b style="color:var(--accent)">외부 열람 모드</b>: 스냅샷 데이터 기준(하루 2회 자동 갱신), 심층분석·하위 탐색은 로컬 서버 전용';
+  }
+  initDeepCat();
+  bestNav();
+  seasonNav();
+  brandNav();
+  document.getElementById('brandBody').innerHTML = '<div class="empty">카테고리를 선택하세요. (하위 탐색으로 세부 분류까지 가능)</div>';
+  loadBest();
+})();
 </script>
 </body>
 </html>
