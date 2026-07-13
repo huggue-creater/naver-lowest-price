@@ -467,11 +467,6 @@ function drillNav(crumbId, chipsId, obj, onChange) {
 
 /* 카테고리별 네이버 인기 검색어 TOP (4060 여성, 최근 4주, 서버 캐시) */
 async function fetchKeywordRank(cid, count = 20) {
-  if (STATIC) {
-    const hit = SNAP?.entries?.[`rank|${cid}|${count}`];
-    if (hit) return (hit.ranks || []).map(x => x.keyword);
-    throw new Error(STATIC_MSG);
-  }
   const r = await fetch(`/api/keywordrank?cid=${cid}&count=${count}`);
   if (!r.ok) throw new Error('인기 검색어 조회 실패');
   return ((await r.json()).ranks || []).map(x => x.keyword);
@@ -509,30 +504,7 @@ function dateRange() {
   const start = new Date(end); start.setDate(end.getDate() - 69); // 10주(70일) 전 월요일
   return { startDate: ymd(start), endDate: ymd(end) };
 }
-/* ══ 정적(스냅샷) 모드: GitHub Pages 등 서버 없는 환경 ══
-   GitHub Actions(snapshot.js)가 미리 수집한 snapshot.json을 읽어 동작한다.
-   snapKey는 snapshot.js와 동일해야 함 — 날짜 대신 기간 길이(일수)로 매칭 */
-const STATIC = location.hostname.endsWith('.github.io') || new URLSearchParams(location.search).has('static');
-let SNAP = null;
-function snapKey(route, body) {
-  const days = Math.round((new Date(body.endDate) - new Date(body.startDate)) / 864e5);
-  const b = {};
-  for (const k of Object.keys(body).sort()) if (k !== 'startDate' && k !== 'endDate') b[k] = body[k];
-  return route + '|' + days + '|' + JSON.stringify(b);
-}
-async function loadSnapshot() {
-  const r = await fetch('./snapshot.json?v=' + Math.floor(Date.now() / 600000)); // 10분 캐시 무효화
-  if (!r.ok) throw new Error('snapshot.json 로드 실패');
-  SNAP = await r.json();
-}
-const STATIC_MSG = '외부 열람(스냅샷) 모드에서는 지원되지 않습니다 — 로컬 서버(localhost:3001)에서 이용 가능';
-
 async function datalab(route, body) {
-  if (STATIC) {
-    const hit = SNAP?.entries?.[snapKey(route, body)];
-    if (hit) return hit;
-    throw new Error(STATIC_MSG);
-  }
   const r = await fetch('/api/datalab/' + route, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -546,11 +518,6 @@ async function datalab(route, body) {
   return j;
 }
 async function shopSearch(q, display = 20) {
-  if (STATIC) {
-    const hit = SNAP?.entries?.[`shop|${q}|${display}`];
-    if (hit) return hit;
-    throw new Error(STATIC_MSG);
-  }
   const r = await fetch(`/api/shop?query=${encodeURIComponent(q)}&display=${display}`);
   if (!r.ok) throw new Error('쇼핑 검색 실패');
   return r.json();
@@ -612,7 +579,7 @@ function switchTab(btn) {
   if (btn.dataset.panel === 'pSeason' && !sState.loaded) loadSeason();
 }
 async function hardRefresh() {
-  if (!STATIC) await fetch('/api/cache/clear', { method: 'POST' });
+  await fetch('/api/cache/clear', { method: 'POST' });
   location.reload();
 }
 
@@ -651,9 +618,7 @@ async function loadBest() {
     state.best = rows;
     renderBestTable();
     renderInsights(rows);
-    document.getElementById('statusBadge').textContent = STATIC && SNAP?.meta
-      ? `외부 열람 · 데이터 갱신: ${new Date(SNAP.meta.generatedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit' })}`
-      : `기준: ${startDate} ~ ${endDate} (주간)`;
+    document.getElementById('statusBadge').textContent = `기준: ${startDate} ~ ${endDate} (주간)`;
     ensureFits(rows, refreshFitViews); // 타겟 적합도(연령 구성)는 백그라운드에서 채워짐
   } catch (e) {
     body.innerHTML = state.datalabOff
@@ -1082,7 +1047,6 @@ function renderSeasonInsights(rows, mLabel) {
 const ctState = { stack: [] }; // 드릴다운 경로. 비어있으면 대분류 8개
 
 async function fetchChildren(cid) {
-  if (STATIC) return []; // 스냅샷 모드: 하위 탐색 미지원 → 칩 숨김
   const r = await fetch('/api/category?cid=' + cid);
   if (!r.ok) throw new Error('카테고리 트리 조회 실패');
   return (await r.json()).children || [];
@@ -1201,10 +1165,6 @@ function deepCid() {
          document.getElementById('deepCat').value;
 }
 async function runDeep(kwOverride, cidOverride) {
-  if (STATIC) {
-    document.getElementById('deepResult').innerHTML = `<div class="empty">${STATIC_MSG}</div>`;
-    return;
-  }
   const input = kwOverride || document.getElementById('deepInput').value.trim();
   if (!input) return;
   if (kwOverride) document.getElementById('deepInput').value = kwOverride;
@@ -1431,11 +1391,6 @@ function closeModal() { document.getElementById('modalBg').classList.remove('sho
 /* ══════════════ 초기화 ══════════════ */
 (async () => {
   applyTheme(localStorage.getItem('theme4060') || 'toss');
-  if (STATIC) {
-    try { await loadSnapshot(); } catch(_) {}
-    document.querySelector('.sub-note').innerHTML +=
-      ' · <b style="color:var(--accent)">외부 열람 모드</b>: 스냅샷 데이터 기준(하루 2회 자동 갱신), 심층분석·하위 탐색은 로컬 서버 전용';
-  }
   initDeepCat();
   bestNav();
   seasonNav();
