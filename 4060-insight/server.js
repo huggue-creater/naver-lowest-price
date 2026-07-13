@@ -87,11 +87,17 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.end(body);
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': '*',
-};
+// 대시보드는 이 서버가 같은 오리진(localhost:3001)으로 서빙하므로 CORS가 필요 없다.
+// 와일드카드 CORS를 두면 사용자가 방문한 임의의 웹사이트가 브라우저에서
+// 이 서버(사용자 네이버 키로 서명된 프록시)를 호출·열람할 수 있어 제거한다.
+const ALLOWED_ORIGINS = new Set([
+  'http://localhost:3001', 'http://127.0.0.1:3001',
+]);
+// 교차 사이트 요청 차단: Origin 헤더가 있고 허용 목록에 없으면 거부(CSRF/드라이브바이 방지)
+function isForbiddenOrigin(req) {
+  const origin = req.headers.origin;
+  return origin && !ALLOWED_ORIGINS.has(origin);
+}
 
 // 프록시 대상 데이터랩 엔드포인트 화이트리스트
 const DATALAB_ROUTES = {
@@ -105,8 +111,9 @@ const DATALAB_ROUTES = {
 
 http.createServer(async (req, res) => {
   const { pathname, query } = url.parse(req.url, true);
-  Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
-  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+  // 교차 오리진에서 온 API 호출은 거부한다(대시보드는 동일 오리진이라 정상 동작에 영향 없음).
+  if (isForbiddenOrigin(req)) { send(res, 403, JSON.stringify({ error: 'cross-origin 요청은 허용되지 않습니다.' })); return; }
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   // ── 데이터랩 프록시 (POST, 캐시) ─────────────────────
   if (DATALAB_ROUTES[pathname] && req.method === 'POST') {
@@ -279,7 +286,9 @@ http.createServer(async (req, res) => {
   }
 
   // ── 캐시 비우기 (수동 새로고침용) ────────────────────
+  // 상태를 바꾸므로 POST만 허용 (GET CSRF 방지). Origin 검사는 위에서 이미 수행됨.
   if (pathname === '/api/cache/clear') {
+    if (req.method !== 'POST') { send(res, 405, JSON.stringify({ error: 'POST만 허용됩니다.' })); return; }
     cache = {};
     try { fs.unlinkSync(CACHE_FILE); } catch(_) {}
     console.log('[캐시] 전체 삭제');
@@ -293,8 +302,10 @@ http.createServer(async (req, res) => {
     send(res, 200, data, 'text/html; charset=utf-8');
   });
 
-}).listen(PORT, () => {
+// 루프백(127.0.0.1)에만 바인딩 — LAN/외부에서 이 무인증 프록시에 접근하지 못하게 한다.
+}).listen(PORT, '127.0.0.1', () => {
   console.log('\n✅  4060 인사이트 대시보드 실행 중 → http://localhost:' + PORT);
   console.log('   데이터랩 API 미연동 시 대시보드 상단 안내를 따라 권한을 추가하세요.\n');
-  require('child_process').exec(`start http://localhost:${PORT}`);
+  // 자동 시작(백그라운드) 모드에서는 브라우저를 띄우지 않음
+  if (!process.env.NO_OPEN) require('child_process').exec(`start http://localhost:${PORT}`);
 });
