@@ -114,9 +114,23 @@ function extractFromJson(body) {
   } catch(_) { return null; }
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// productId → { fee, cachedAt } (같은 상품 재조회로 인한 추가 요청 방지)
+const deliveryFeeCache = new Map();
+const DELIVERY_FEE_CACHE_TTL = 30 * 60 * 1000;
+
 // 네이버 쇼핑 카탈로그 페이지에서 배송비 추출
 async function getDeliveryFee(productId) {
   if (!productId) return null;
+
+  const cached = deliveryFeeCache.get(productId);
+  if (cached && Date.now() - cached.cachedAt < DELIVERY_FEE_CACHE_TTL) {
+    return cached.fee;
+  }
+
   try {
     const r = await httpsGet(`https://search.shopping.naver.com/catalog/${productId}`, {
       'User-Agent':      BROWSER_UA,
@@ -143,9 +157,13 @@ async function getDeliveryFee(productId) {
     ];
     for (const fn of checks) {
       const v = fn();
-      if (typeof v === 'number') return v;
+      if (typeof v === 'number') {
+        deliveryFeeCache.set(productId, { fee: v, cachedAt: Date.now() });
+        return v;
+      }
     }
   } catch(_) {}
+  deliveryFeeCache.set(productId, { fee: null, cachedAt: Date.now() });
   return null;
 }
 
@@ -184,20 +202,26 @@ http.createServer(async (req, res) => {
       const items = data.items || [];
       console.log(`[Naver] 총 ${data.total || 0}개 중 ${items.length}개 반환`);
 
-      // 상위 5개에 배송비 병렬 조회 (카탈로그 상품만, 5초 타임아웃)
-      console.log(`[배송비] 상위 5개 조회 시작...`);
-      const enriched = await Promise.all(
-        items.slice(0, 5).map(async item => {
-          if (item.productType !== '1' || !item.productId) return item;
-          const fee = await withTimeout(getDeliveryFee(item.productId), 5000);
-          if (fee !== null) {
-            console.log(`  [배송비] ${item.mallName}: ${fee === 0 ? '무료' : fee + '원'}`);
-            return { ...item, deliveryFee: fee };
-          }
-          return item;
-        })
-      );
-      data.items = [...enriched, ...items.slice(5)];
+      // 상위 3개만 순차 조회 (카탈로그 상품만, 5초 타임아웃) — 네이버 차단 방지를 위해
+      // 병렬 대신 순차 + 딜레이로 짧은 시간에 몰리는 요청 수를 줄인다.
+      const TOP_N = 3;
+      console.log(`[배송비] 상위 ${TOP_N}개 순차 조회 시작...`);
+      const enriched = [];
+      for (const item of items.slice(0, TOP_N)) {
+        if (item.productType !== '1' || !item.productId) {
+          enriched.push(item);
+          continue;
+        }
+        const fee = await withTimeout(getDeliveryFee(item.productId), 5000);
+        if (fee !== null) {
+          console.log(`  [배송비] ${item.mallName}: ${fee === 0 ? '무료' : fee + '원'}`);
+          enriched.push({ ...item, deliveryFee: fee });
+        } else {
+          enriched.push(item);
+        }
+        await sleep(400);
+      }
+      data.items = [...enriched, ...items.slice(TOP_N)];
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify(data));
