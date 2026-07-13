@@ -5,8 +5,6 @@ const url   = require('url');
 const path  = require('path');
 const crypto = require('crypto');
 
-const PORT = 3001;
-
 // .env 파일 로드 (상위 폴더 우선, 없으면 현재 폴더)
 for (const envPath of [path.join(__dirname, '..', '.env'), path.join(__dirname, '.env')]) {
   try {
@@ -27,6 +25,21 @@ if (!NAVER_ID || !NAVER_SEC) {
   console.error('   VsCode 폴더(상위)의 .env 를 사용하거나, 이 폴더에 .env 를 만드세요:');
   console.error('   NAVER_ID=클라이언트ID');
   console.error('   NAVER_SEC=클라이언트시크릿\n');
+  process.exit(1);
+}
+
+// APP_PASSWORD가 설정되면 "공개 배포 모드": 0.0.0.0으로 바인딩하고 비밀번호 게이트를 켠다.
+// 미설정 시 기존과 동일하게 로컬 전용(127.0.0.1, 무인증)으로 동작한다.
+// PORT는 호스팅 플랫폼(Render 등)이 지정 — 지정돼 있으면 공개 배포로 간주해 비밀번호를 강제한다.
+const APP_PASSWORD = (process.env.APP_PASSWORD || '').trim();
+const IS_CLOUD      = !!process.env.PORT;
+const REQUIRE_AUTH  = IS_CLOUD || !!APP_PASSWORD;
+const PORT = parseInt(process.env.PORT, 10) || 3001;
+const HOST = IS_CLOUD ? '0.0.0.0' : '127.0.0.1';
+
+if (IS_CLOUD && !APP_PASSWORD) {
+  console.error('\n❌  공개 배포 환경(PORT 지정됨)인데 APP_PASSWORD가 설정되지 않았습니다.');
+  console.error('   호스팅 서비스의 환경변수에 APP_PASSWORD를 추가하세요.\n');
   process.exit(1);
 }
 
@@ -87,6 +100,66 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.end(body);
 }
 
+// ── 비밀번호 인증 (공개 배포 시에만 사용) ─────────────
+// 세션은 메모리에 저장 — 서버 재시작 시 전원 로그아웃됨(무료 호스팅의 재시작 특성상 감수)
+const sessions = new Map();       // token -> 만료시각(ms)
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30일
+const loginAttempts = new Map();  // ip -> { count, lockedUntil }
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, exp] of sessions) if (now > exp) sessions.delete(k);
+  for (const [k, v] of loginAttempts) if (now > v.lockedUntil + LOGIN_LOCKOUT_MS) loginAttempts.delete(k);
+}, 60 * 60 * 1000).unref();
+
+function clientIp(req) {
+  const xf = req.headers['x-forwarded-for'];
+  return xf ? xf.split(',')[0].trim() : req.socket.remoteAddress;
+}
+function parseCookies(req) {
+  const out = {};
+  (req.headers.cookie || '').split(';').forEach(p => {
+    const i = p.indexOf('=');
+    if (i > -1) out[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim());
+  });
+  return out;
+}
+function hasValidSession(req) {
+  const token = parseCookies(req).insight_session;
+  if (!token) return false;
+  const exp = sessions.get(token);
+  if (!exp || Date.now() > exp) { sessions.delete(token); return false; }
+  return true;
+}
+// 타이밍 공격 방지를 위해 해시 후 고정 길이로 비교
+function safeEqual(a, b) {
+  const ah = crypto.createHash('sha256').update(a).digest();
+  const bh = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(ah, bh);
+}
+function renderLogin(error) {
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4060 인사이트 대시보드</title>
+<style>
+  *{box-sizing:border-box} body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1115;color:#e6e6e6;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+  form{background:#1a1d24;padding:32px 28px;border-radius:12px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  h1{font-size:16px;margin:0 0 20px;color:#fff;font-weight:600}
+  input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #333;background:#0f1115;color:#fff;font-size:14px;margin-bottom:12px}
+  button{width:100%;padding:10px;border:none;border-radius:8px;background:#4f8cff;color:#fff;font-size:14px;cursor:pointer}
+  button:hover{background:#3b78e8}
+  .err{color:#ff6b6b;font-size:13px;margin:-4px 0 12px}
+</style></head><body>
+<form method="post" action="/login">
+  <h1>🔒 4060 인사이트 대시보드</h1>
+  ${error ? `<div class="err">${error}</div>` : ''}
+  <input type="password" name="password" placeholder="비밀번호" autofocus required>
+  <button type="submit">입장</button>
+</form>
+</body></html>`;
+}
+
 // 대시보드는 이 서버가 같은 오리진(localhost:3001)으로 서빙하므로 CORS가 필요 없다.
 // 와일드카드 CORS를 두면 사용자가 방문한 임의의 웹사이트가 브라우저에서
 // 이 서버(사용자 네이버 키로 서명된 프록시)를 호출·열람할 수 있어 제거한다.
@@ -94,9 +167,13 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:3001', 'http://127.0.0.1:3001',
 ]);
 // 교차 사이트 요청 차단: Origin 헤더가 있고 허용 목록에 없으면 거부(CSRF/드라이브바이 방지)
+// 공개 배포 시 도메인을 미리 알 수 없으므로, Host 헤더 기준 동일 오리진도 허용한다.
 function isForbiddenOrigin(req) {
   const origin = req.headers.origin;
-  return origin && !ALLOWED_ORIGINS.has(origin);
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return false;
+  const proto = req.headers['x-forwarded-proto'] || 'http';
+  return origin !== `${proto}://${req.headers.host}`;
 }
 
 // 프록시 대상 데이터랩 엔드포인트 화이트리스트
@@ -114,6 +191,42 @@ http.createServer(async (req, res) => {
   // 교차 오리진에서 온 API 호출은 거부한다(대시보드는 동일 오리진이라 정상 동작에 영향 없음).
   if (isForbiddenOrigin(req)) { send(res, 403, JSON.stringify({ error: 'cross-origin 요청은 허용되지 않습니다.' })); return; }
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+  // ── 로그인 (공개 배포 시에만 활성) ───────────────────
+  if (REQUIRE_AUTH && pathname === '/login') {
+    if (req.method === 'GET') { send(res, 200, renderLogin(), 'text/html; charset=utf-8'); return; }
+    if (req.method === 'POST') {
+      const ip = clientIp(req);
+      const attempt = loginAttempts.get(ip);
+      if (attempt && attempt.count >= LOGIN_MAX_ATTEMPTS && Date.now() < attempt.lockedUntil) {
+        send(res, 429, renderLogin('시도 횟수를 초과했습니다. 잠시 후 다시 시도하세요.'), 'text/html; charset=utf-8');
+        return;
+      }
+      const raw = await readBody(req);
+      const password = new url.URLSearchParams(raw).get('password') || '';
+      if (safeEqual(password, APP_PASSWORD)) {
+        loginAttempts.delete(ip);
+        const token = crypto.randomBytes(32).toString('hex');
+        sessions.set(token, Date.now() + SESSION_TTL);
+        const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+        res.writeHead(302, {
+          'Location': '/',
+          'Set-Cookie': `insight_session=${token}; HttpOnly; Path=/; Max-Age=${SESSION_TTL / 1000}; SameSite=Lax${secure}`,
+        });
+        res.end();
+        return;
+      }
+      const count = (attempt?.count || 0) + 1;
+      loginAttempts.set(ip, { count, lockedUntil: count >= LOGIN_MAX_ATTEMPTS ? Date.now() + LOGIN_LOCKOUT_MS : 0 });
+      send(res, 401, renderLogin('비밀번호가 올바르지 않습니다.'), 'text/html; charset=utf-8');
+      return;
+    }
+  }
+  // 세션이 없으면 로그인 페이지로 보낸다 (API 요청은 401만 응답)
+  if (REQUIRE_AUTH && !hasValidSession(req)) {
+    if (pathname.startsWith('/api/')) { send(res, 401, JSON.stringify({ error: '인증이 필요합니다.' })); return; }
+    res.writeHead(302, { Location: '/login' }); res.end(); return;
+  }
 
   // ── 데이터랩 프록시 (POST, 캐시) ─────────────────────
   if (DATALAB_ROUTES[pathname] && req.method === 'POST') {
@@ -302,10 +415,12 @@ http.createServer(async (req, res) => {
     send(res, 200, data, 'text/html; charset=utf-8');
   });
 
-// 루프백(127.0.0.1)에만 바인딩 — LAN/외부에서 이 무인증 프록시에 접근하지 못하게 한다.
-}).listen(PORT, '127.0.0.1', () => {
-  console.log('\n✅  4060 인사이트 대시보드 실행 중 → http://localhost:' + PORT);
+// 로컬은 루프백(127.0.0.1)에만 바인딩 — 공개 배포(PORT 지정) 시에만 0.0.0.0으로 연다.
+// 공개 배포는 REQUIRE_AUTH가 강제되어 있어(위 검증) 비밀번호 없이는 접근할 수 없다.
+}).listen(PORT, HOST, () => {
+  console.log(`\n✅  4060 인사이트 대시보드 실행 중 → http://${IS_CLOUD ? '0.0.0.0' : 'localhost'}:${PORT}`);
+  if (REQUIRE_AUTH) console.log('   🔒 비밀번호 보호 활성화됨 (최초 접속 시 /login)');
   console.log('   데이터랩 API 미연동 시 대시보드 상단 안내를 따라 권한을 추가하세요.\n');
-  // 자동 시작(백그라운드) 모드에서는 브라우저를 띄우지 않음
-  if (!process.env.NO_OPEN) require('child_process').exec(`start http://localhost:${PORT}`);
+  // 자동 시작(백그라운드) 모드나 공개 배포 환경에서는 브라우저를 띄우지 않음
+  if (!process.env.NO_OPEN && !IS_CLOUD && process.platform === 'win32') require('child_process').exec(`start http://localhost:${PORT}`);
 });

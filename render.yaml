@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: insight-dashboard
+    runtime: node
+    plan: free
+    rootDir: 4060-insight
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NAVER_ID
+        sync: false
+      - key: NAVER_SEC
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
