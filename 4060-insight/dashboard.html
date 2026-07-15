@@ -220,7 +220,7 @@
       <button class="btn" onclick="hardRefresh()">🔄 데이터 새로고침</button>
     </div>
   </header>
-  <div class="sub-note">네이버 데이터랩(검색어트렌드·쇼핑인사이트) + 쇼핑 검색 API 기반 · 트렌드 수치는 기간 내 상대지수(최대 100) · 모멘텀은 선택한 연령대 기준(기본 40·50·60대) · 데이터는 6시간 캐시</div>
+  <div class="sub-note">네이버 데이터랩(검색어트렌드·쇼핑인사이트) + 쇼핑 검색 API 기반 · 트렌드 수치는 기간 내 상대지수(최대 100) · 모멘텀은 선택한 연령대·성별 기준(기본 40·50·60대 여성) · 데이터는 6시간 캐시</div>
 
   <div class="banner" id="setupBanner">
     <b>⚠️ 데이터랩 API 권한이 아직 등록되지 않았습니다.</b> 트렌드/랭킹 기능을 사용하려면 아래 절차로 권한을 추가하세요. (승인 대기 없이 즉시 적용)
@@ -247,9 +247,9 @@
       <ul id="insightList"></ul>
     </div>
     <div class="card">
-      <h2>4060 여성 관심 상승 키워드 랭킹</h2>
-      <div class="desc"><b>🏠 전체</b>에서는 홈쇼핑 주력 큐레이션 키워드 풀(상품 80개 + 브랜드 64개)을, <b>카테고리를 선택하면 그 분류의 네이버 실제 인기 검색어 TOP 20(4060 여성 기준)</b>을 분석합니다. 하위 탐색으로 세부 분류(예: 화장품/미용 › 스킨케어)까지 내려갈 수 있습니다.
-        아래 <b>기준 연령</b>을 선택하면 그 연령대의 최근 2주 검색 모멘텀으로 다시 계산해 상승순으로 정렬합니다(기본값: 40·50·60대). 행을 클릭하면 상세 분석이 열립니다.</div>
+      <h2 id="bestHeading">연령별 관심 상승 키워드 랭킹</h2>
+      <div class="desc"><b>🏠 전체</b>에서는 홈쇼핑 주력 큐레이션 키워드 풀(상품 80개 + 브랜드 64개)을, <b>카테고리를 선택하면 그 분류의 네이버 실제 인기 검색어 TOP 20(선택 연령대·성별 기준)</b>을 분석합니다. 하위 탐색으로 세부 분류(예: 화장품/미용 › 스킨케어)까지 내려갈 수 있습니다.
+        아래 <b>기준 연령·성별</b>을 선택하면 그 조건의 최근 2주 검색 모멘텀으로 다시 계산해 상승순으로 정렬합니다(기본값: 40·50·60대 여성). 행을 클릭하면 상세 분석이 열립니다.</div>
       <div class="chips" id="typeChips">
         <span class="chips-label">키워드 유형</span>
         <button class="chip on" data-t="all">전체</button>
@@ -259,6 +259,7 @@
       <div class="chips" id="bestCrumb"></div>
       <div class="chips" id="bestChildChips"></div>
       <div class="chips" id="ageChips"></div>
+      <div class="chips" id="ageGenderChips"></div>
       <div id="bestBody" style="margin-top:8px"><div class="loading"><span class="spinner"></span>데이터랩 조회 중...</div></div>
     </div>
   </div>
@@ -271,7 +272,7 @@
     </div>
     <div class="card">
       <h2>시즌 선행 분석 — 전년 패턴으로 미리 잡는 편성</h2>
-      <div class="desc">최근 15개월(65주)의 클릭 지수를 <b>하나의 척도로</b> 조회해(선택 연령대 여성 기준, 기본 40·50·60대), 두 가지를 계산합니다.<br>
+      <div class="desc">최근 15개월(65주)의 클릭 지수를 <b>하나의 척도로</b> 조회해(선택 연령대·성별 기준, 기본 40·50·60대 여성), 두 가지를 계산합니다.<br>
         ① <b>전년 동시즌 대비 올해</b>: 올해 최근 수치가 전년 같은 시점보다 얼마나 높은지(YoY)<br>
         ② <b>전년 패턴 상승률</b>: 전년에 "지금 시점 → 리드타임 후 시점"으로 검색이 얼마나 늘었는지 — <b>이 값이 큰 키워드가 지금 소싱·조건협의를 시작해야 할 후보</b>이며, 항상 이 상승률이 높은 순으로 정렬합니다.<br>
         미니차트: 전년 시즌 흐름이며 <b style="color:var(--accent)">●</b> 전년의 현재 시점, <b style="color:var(--up)">●</b> 리드타임 후 시점입니다. 행 클릭 시 심층분석.</div>
@@ -284,6 +285,7 @@
       <div class="chips" id="seasonCrumb"></div>
       <div class="chips" id="seasonChildChips"></div>
       <div class="chips" id="seasonAgeChips"></div>
+      <div class="chips" id="seasonGenderChips"></div>
       <div class="chips">
         <span class="chips-label">편성 리드타임</span>
         <select id="leadSel" onchange="sState.lead=+this.value;renderSeason()">
@@ -300,10 +302,11 @@
   <div class="panel" id="pCat">
     <div class="card">
       <h2>카테고리 클릭 트렌드</h2>
-      <div class="desc">네이버 쇼핑 공식 분류 체계를 그대로 따라 내려갑니다. <b>하위 탐색 칩(›)</b>을 누르면 그 분류의 세부 카테고리 트렌드로 전환되고, 위치 경로를 누르면 상위로 돌아갑니다. 각 카테고리를 자체 최대값=100으로 지수화해 추세 비교가 가능하며, 범례 클릭으로 표시/숨김. 집계가 끝난 주(월~일)까지만 표시합니다. 아래 <b>기준 연령</b>을 선택하면 그 연령대 여성 기준으로 다시 조회합니다(기본값: 40·50·60대).</div>
+      <div class="desc">네이버 쇼핑 공식 분류 체계를 그대로 따라 내려갑니다. <b>하위 탐색 칩(›)</b>을 누르면 그 분류의 세부 카테고리 트렌드로 전환되고, 위치 경로를 누르면 상위로 돌아갑니다. 각 카테고리를 자체 최대값=100으로 지수화해 추세 비교가 가능하며, 범례 클릭으로 표시/숨김. 집계가 끝난 주(월~일)까지만 표시합니다. 아래 <b>기준 연령·성별</b>을 선택하면 그 조건으로 다시 조회합니다(기본값: 40·50·60대 여성).</div>
       <div class="chips" id="catCrumb"></div>
       <div class="chips" id="catChildChips"></div>
       <div class="chips" id="catAgeChips"></div>
+      <div class="chips" id="catGenderChips"></div>
       <div class="desc" id="catStatus" style="margin-bottom:6px"></div>
       <div class="chart-box"><canvas id="catChart"></canvas></div>
     </div>
@@ -317,7 +320,7 @@
   <div class="panel" id="pDeep">
     <div class="card">
       <h2>키워드 심층분석</h2>
-      <div class="desc">키워드를 입력하면 ① 선택 연령대 vs 전체 검색 트렌드 비교 ② 쇼핑 클릭 연령 구성(선택 연령대 적합도) ③ 관련 상품/브랜드를 분석합니다. 쉼표로 최대 3개 비교 가능. 아래 <b>기준 연령</b>으로 비교 기준을 바꿀 수 있습니다(기본값: 40·50·60대).</div>
+      <div class="desc">키워드를 입력하면 ① 선택 연령대·성별 vs 전체 검색 트렌드 비교 ② 쇼핑 클릭 연령 구성(선택 연령대 적합도) ③ 관련 상품/브랜드를 분석합니다. 쉼표로 최대 3개 비교 가능. 아래 <b>기준 연령·성별</b>로 비교 기준을 바꿀 수 있습니다(기본값: 40·50·60대 여성).</div>
       <div class="search-row">
         <input type="text" id="deepInput" placeholder="예: 콜라겐, 린넨원피스, 안마의자" onkeydown="if(event.key==='Enter')runDeep()">
         <select id="deepCat" onchange="onDeepCatChange(1)"></select>
@@ -326,6 +329,7 @@
         <button class="btn primary" onclick="runDeep()">분석</button>
       </div>
       <div class="chips" id="deepAgeChips"></div>
+      <div class="chips" id="deepGenderChips"></div>
       <div id="deepResult"><div class="empty">키워드를 입력해 주세요.</div></div>
     </div>
   </div>
@@ -334,10 +338,11 @@
   <div class="panel" id="pBrand">
     <div class="card">
       <h2>상승 키워드 기반 브랜드/상품군 추천</h2>
-      <div class="desc">선택한 카테고리(세부 분류 가능)의 <b>네이버 인기 검색어(선택 연령대 여성) 중 상승 모멘텀 상위 5개</b>로 쇼핑 검색을 집계해, 선택 연령대 타겟 소비로 이어질 확률이 높은 브랜드와 상품군을 추천합니다. 가격은 네이버 최저가 기준(카탈로그 상품은 "네이버 최저가" 표시). 아래 <b>기준 연령</b>으로 기준을 바꿀 수 있습니다(기본값: 40·50·60대).</div>
+      <div class="desc">선택한 카테고리(세부 분류 가능)의 <b>네이버 인기 검색어(선택 연령대·성별) 중 상승 모멘텀 상위 5개</b>로 쇼핑 검색을 집계해, 선택 조건의 타겟 소비로 이어질 확률이 높은 브랜드와 상품군을 추천합니다. 가격은 네이버 최저가 기준(카탈로그 상품은 "네이버 최저가" 표시). 아래 <b>기준 연령·성별</b>로 기준을 바꿀 수 있습니다(기본값: 40·50·60대 여성).</div>
       <div class="chips" id="brandCrumb"></div>
       <div class="chips" id="brandChildChips"></div>
       <div class="chips" id="brandAgeChips"></div>
+      <div class="chips" id="brandGenderChips"></div>
       <div id="brandBody"><div class="empty">카테고리를 선택하세요.</div></div>
     </div>
   </div>
@@ -392,15 +397,18 @@ const PALETTES = {
   pastel: ['#ef7fa4','#8fb7e8','#a8d8b9','#f5b971','#b79ce8','#f2a7c3','#7fd0d8','#c9b8a8'],
 };
 function palette() { return PALETTES[document.body.dataset.theme] || PALETTES.toss; }
-const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', selAges: ['40','50','60'] };
-const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, selAges: ['40','50','60'] }; // 시즌 선행 탭 상태
-const bState = { stack: [], selAges: ['40','50','60'] }; // 브랜드/상품 추천 탭 상태
-const dState = { selAges: ['40','50','60'] }; // 키워드 심층분석 탭 상태
+const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', selAges: ['40','50','60'], gender: 'f' };
+const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, selAges: ['40','50','60'], gender: 'f' }; // 시즌 선행 탭 상태
+const bState = { stack: [], selAges: ['40','50','60'], gender: 'f' }; // 브랜드/상품 추천 탭 상태
+const dState = { selAges: ['40','50','60'], gender: 'f' }; // 키워드 심층분석 탭 상태
 
 /* 쇼핑인사이트 연령대(10대 단위) → 검색어트렌드 연령 그룹 코드 매핑
    (7~11이 곧 40·50·60대 구간이라 기존 하드코딩 값과 정확히 일치) */
 const SEARCH_AGE_MAP = { '10':['1','2'], '20':['3','4'], '30':['5','6'], '40':['7','8'], '50':['9','10'], '60':['11'] };
 function toSearchAgeCodes(decades) { return [...new Set(decades.flatMap(d => SEARCH_AGE_MAP[d] || []))]; }
+
+/* 선택된 연령·성별을 사람이 읽는 문구로: "40·50대 여성" */
+function ageGenderLabel(stateObj) { return `${stateObj.selAges.join('·')}대 ${stateObj.gender === 'm' ? '남성' : '여성'}`; }
 
 /* 연령 선택 칩 공용 렌더러: 복수 선택, 최소 1개 유지. 선택이 바뀌면 onChange로 재조회 */
 function initAgeChips(containerId, stateObj, label, onChange) {
@@ -413,6 +421,20 @@ function initAgeChips(containerId, stateObj, label, onChange) {
     if (!next.length) return; // 최소 1개 연령은 유지
     stateObj.selAges = next.sort((a,b) => +a - +b);
     el.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', stateObj.selAges.includes(x.dataset.g)));
+    onChange();
+  });
+}
+
+/* 성별 선택 칩 공용 렌더러: 단일 선택(여성/남성). 선택이 바뀌면 onChange로 재조회 */
+function initGenderChips(containerId, stateObj, label, onChange) {
+  const el = document.getElementById(containerId);
+  const opts = [['f','여성'], ['m','남성']];
+  el.innerHTML = `<span class="chips-label">${label}</span>` +
+    opts.map(([g, n]) => `<button class="chip gender${stateObj.gender === g ? ' on' : ''}" data-g="${g}">${n}</button>`).join('');
+  el.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+    if (stateObj.gender === ch.dataset.g) return;
+    stateObj.gender = ch.dataset.g;
+    el.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x.dataset.g === stateObj.gender));
     onChange();
   });
 }
@@ -583,7 +605,7 @@ async function loadBest() {
             datalab('shopping/keywords', {
               startDate, endDate, timeUnit:'week', category: cat.cid,
               keyword: chunk.map(k => ({ name: k, param: [k] })),
-              gender: 'f', ages: state.selAges,
+              gender: state.gender, ages: state.selAges,
             }).then(j => ({ cat, type, results: j.results || [] }))
           );
         }
@@ -611,7 +633,7 @@ async function loadBest() {
   }
 }
 
-/* 베스트 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어 TOP 20(4060 여성) 기반으로 전환 */
+/* 베스트 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어 TOP 20(선택 연령대·성별) 기반으로 전환 */
 const bestNav = drillNav('bestCrumb', 'bestChildChips', state, () => {
   document.getElementById('typeChips').style.display = state.stack.length ? 'none' : '';
   if (state.stack.length) loadBestDrill();
@@ -620,10 +642,10 @@ const bestNav = drillNav('bestCrumb', 'bestChildChips', state, () => {
 async function loadBestDrill() {
   const node = state.stack[state.stack.length - 1];
   const body = document.getElementById('bestBody');
-  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어(4060 여성) 조회 중...</div>`;
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어(${ageGenderLabel(state)}) 조회 중...</div>`;
   const { startDate, endDate } = dateRange();
   try {
-    const kws = await fetchKeywordRank(node.cid, 20);
+    const kws = await fetchKeywordRank(node.cid, 20, state.selAges, state.gender);
     if (!kws.length) throw new Error('인기 검색어 없음');
     const jobs = [];
     for (let i = 0; i < kws.length; i += 5) {
@@ -631,7 +653,7 @@ async function loadBestDrill() {
       jobs.push(datalab('shopping/keywords', {
         startDate, endDate, timeUnit:'week', category: node.cid,
         keyword: chunk.map(k => ({ name: k, param: [k] })),
-        gender: 'f', ages: state.selAges,
+        gender: state.gender, ages: state.selAges,
       }));
     }
     const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
@@ -663,6 +685,8 @@ function renderBestTable() {
   rows = [...rows].sort((a,b) => (b.growth ?? -999) - (a.growth ?? -999)).slice(0, 20);
 
   const body = document.getElementById('bestBody');
+  const genderLbl = state.gender === 'm' ? '남성' : '여성';
+  document.getElementById('bestHeading').textContent = `${state.selAges.join('·')}대 ${genderLbl} 관심 상승 키워드 랭킹`;
   if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
   const ageLbl = `${state.selAges.join('·')}대`;
   body.innerHTML = `<table class="resp"><thead><tr><th>모멘텀순</th><th>키워드</th><th>${ageLbl} 최근 2주 모멘텀</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
@@ -687,8 +711,8 @@ function renderInsights(rows) {
   const hotCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0][0];
   const list = [];
   list.push(`<li><span class="tag sale">판매</span><b>${ups.slice(0,3).map(r=>esc(r.kw)).join(' · ')}</b> 검색 관심이 최근 2주 급상승 — 관련 상품 소싱/재고 점검 및 프로모션 우선 검토</li>`);
-  list.push(`<li><span class="tag mkt">마케팅</span>상승 키워드 <b>${ups.map(r=>`"${esc(r.kw)}"`).join(', ')}</b> 를 검색광고·상품명·방송 타이틀 카피에 반영하면 4060 여성 유입 효율 기대</li>`);
-  list.push(`<li><span class="tag pgm">편성</span>모멘텀 최다 카테고리는 <b>${esc(hotCat)}</b> — 4060 여성 시청 집중 시간대(${PGM_SLOT[hotCat] || '오전·저녁'}) 편성 확대 검토</li>`);
+  list.push(`<li><span class="tag mkt">마케팅</span>상승 키워드 <b>${ups.map(r=>`"${esc(r.kw)}"`).join(', ')}</b> 를 검색광고·상품명·방송 타이틀 카피에 반영하면 ${ageGenderLabel(state)} 유입 효율 기대</li>`);
+  list.push(`<li><span class="tag pgm">편성</span>모멘텀 최다 카테고리는 <b>${esc(hotCat)}</b> — ${ageGenderLabel(state)} 시청 집중 시간대(${PGM_SLOT[hotCat] || '오전·저녁'}) 편성 확대 검토</li>`);
   document.getElementById('insightList').innerHTML = list.join('');
   document.getElementById('insightBox').style.display = 'block';
 }
@@ -719,7 +743,7 @@ async function loadSeason() {
             datalab('shopping/keywords', {
               startDate, endDate, timeUnit:'week', category: cat.cid,
               keyword: chunk.map(k => ({ name: k, param: [k] })),
-              gender: 'f', ages: sState.selAges,
+              gender: sState.gender, ages: sState.selAges,
             }).then(j => ({ cat, type, results: j.results || [] }))
           );
         }
@@ -743,7 +767,7 @@ async function loadSeason() {
   }
 }
 
-/* 시즌 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어(4060 여성) 기반 시즌 분석 */
+/* 시즌 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어(선택 연령대·성별) 기반 시즌 분석 */
 const seasonNav = drillNav('seasonCrumb', 'seasonChildChips', sState, () => {
   document.getElementById('seasonTypeChips').style.display = sState.stack.length ? 'none' : '';
   if (sState.stack.length) loadSeasonDrill();
@@ -752,10 +776,10 @@ const seasonNav = drillNav('seasonCrumb', 'seasonChildChips', sState, () => {
 async function loadSeasonDrill() {
   const node = sState.stack[sState.stack.length - 1];
   const body = document.getElementById('seasonBody');
-  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어의 전년 데이터 조회 중...</div>`;
+  body.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어(${ageGenderLabel(sState)})의 전년 데이터 조회 중...</div>`;
   const { startDate, endDate } = dateRangeSeason();
   try {
-    const kws = await fetchKeywordRank(node.cid, 20);
+    const kws = await fetchKeywordRank(node.cid, 20, sState.selAges, sState.gender);
     if (!kws.length) throw new Error('인기 검색어 없음');
     const jobs = [];
     for (let i = 0; i < kws.length; i += 5) {
@@ -763,7 +787,7 @@ async function loadSeasonDrill() {
       jobs.push(datalab('shopping/keywords', {
         startDate, endDate, timeUnit:'week', category: node.cid,
         keyword: chunk.map(k => ({ name: k, param: [k] })),
-        gender: 'f', ages: sState.selAges,
+        gender: sState.gender, ages: sState.selAges,
       }));
     }
     const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
@@ -886,7 +910,7 @@ function renderSeasonInsights(rows, mLabel) {
 }
 
 /* ══════════════ ② 카테고리 트렌드 (네이버 분류 드릴다운) ══════════════ */
-const ctState = { stack: [], selAges: ['40','50','60'] }; // 드릴다운 경로. 비어있으면 대분류 8개
+const ctState = { stack: [], selAges: ['40','50','60'], gender: 'f' }; // 드릴다운 경로. 비어있으면 대분류 8개
 
 async function fetchChildren(cid) {
   const r = await fetch('/api/category?cid=' + cid);
@@ -938,7 +962,7 @@ async function loadCategories() {
       jobs.push(datalab('shopping/categories', {
         startDate, endDate, timeUnit:'week',
         category: chunk.map(c => ({ name: c.name, param: [c.cid] })),
-        gender: 'f', ages: ctState.selAges,
+        gender: ctState.gender, ages: ctState.selAges,
       }));
     }
     const resAll = (await Promise.all(jobs)).flatMap(j => j.results || []);
@@ -1020,7 +1044,7 @@ async function runDeep(kwOverride, cidOverride) {
 
   const groups = kws.map(k => ({ groupName: k, keywords: [k] }));
   const [target, all, ageRes, genderRes, shop] = await Promise.allSettled([
-    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups, gender:'f', ages: toSearchAgeCodes(dState.selAges) }),
+    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups, gender: dState.gender, ages: toSearchAgeCodes(dState.selAges) }),
     datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups }),
     datalab('shopping/keyword/age',    { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
     datalab('shopping/keyword/gender', { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
@@ -1032,7 +1056,7 @@ async function runDeep(kwOverride, cidOverride) {
   // ── 트렌드 비교 차트 ──
   if (target.status === 'fulfilled' && all.status === 'fulfilled') {
     html += `<div class="grid2">
-      <div class="card" style="margin:0"><h2>${ageLbl} 여성 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartT"></canvas></div></div>
+      <div class="card" style="margin:0"><h2>${ageGenderLabel(dState)} 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartT"></canvas></div></div>
       <div class="card" style="margin:0"><h2>전체 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartA"></canvas></div></div>
     </div>`;
   } else if (state.datalabOff) {
@@ -1049,17 +1073,18 @@ async function runDeep(kwOverride, cidOverride) {
     const total = Object.values(byGroup).reduce((a,b) => a+b, 0);
     if (total > 0) {
       const fit = (dState.selAges.reduce((a,g) => a + (byGroup[g]||0), 0) / total * 100);
-      let femaleShare = null;
+      let genderShare = null;
       if (genderRes.status === 'fulfilled') {
         const g2 = {};
         (genderRes.value.results?.[0]?.data || []).forEach(d => g2[d.group] = (g2[d.group]||0) + d.ratio);
         const t2 = (g2.f||0) + (g2.m||0);
-        if (t2 > 0) femaleShare = g2.f / t2 * 100;
+        if (t2 > 0) genderShare = (g2[dState.gender]||0) / t2 * 100;
       }
+      const genderLbl = dState.gender === 'm' ? '남성' : '여성';
       fitHtml = `<div class="grid2" style="margin-top:16px">
         <div class="card" style="margin:0">
           <h2>"${esc(kws[0])}" ${ageLbl} 타겟 적합도</h2>
-          <div class="desc">쇼핑 클릭 중 ${ageLbl} 비중${femaleShare!==null ? ` · 여성 비중 ${femaleShare.toFixed(0)}%` : ''}</div>
+          <div class="desc">쇼핑 클릭 중 ${ageLbl} 비중${genderShare!==null ? ` · ${genderLbl} 비중 ${genderShare.toFixed(0)}%` : ''}</div>
           <div class="fit-score"><div class="num">${fit.toFixed(0)}점</div>
           <div class="lbl">${fit >= 60 ? '핵심 타겟 상품 — 방송/프로모션 최우선 후보' : fit >= 40 ? '타겟 적합 — 소구점 보강 시 유효' : '타겟 비중 낮음 — 젊은층 상품일 가능성'}</div></div>
         </div>
@@ -1160,7 +1185,7 @@ async function loadBrandNode() {
   box.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어·브랜드 집계 중...</div>`;
   try {
     // 인기 검색어 10개 → 모멘텀 계산 → 상승 상위 5개 선정
-    const ranked = await fetchKeywordRank(node.cid, 10, bState.selAges);
+    const ranked = await fetchKeywordRank(node.cid, 10, bState.selAges, bState.gender);
     if (!ranked.length) throw new Error('인기 검색어 없음');
     const growthMap = new Map();
     let kws = ranked.slice(0, 5);
@@ -1172,7 +1197,7 @@ async function loadBrandNode() {
         jobs.push(datalab('shopping/keywords', {
           startDate, endDate, timeUnit:'week', category: node.cid,
           keyword: chunk.map(k => ({ name: k, param: [k] })),
-          gender: 'f', ages: bState.selAges,
+          gender: bState.gender, ages: bState.selAges,
         }));
       }
       const res = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
@@ -1238,12 +1263,21 @@ function closeModal() { document.getElementById('modalBg').classList.remove('sho
 /* ══════════════ 초기화 ══════════════ */
 initAgeChips('ageChips', state, '🔥 기준 연령 (복수 선택 · 선택 연령의 상승 모멘텀순 정렬, 기본 40·50·60대)',
   () => { if (state.stack.length) loadBestDrill(); else loadBest(); });
+initGenderChips('ageGenderChips', state, '기준 성별',
+  () => { if (state.stack.length) loadBestDrill(); else loadBest(); });
 initAgeChips('seasonAgeChips', sState, '🗓️ 기준 연령 (복수 선택 · 선택 연령의 전년 패턴 상승률순 정렬, 기본 40·50·60대)',
   () => { if (sState.stack.length) loadSeasonDrill(); else loadSeason(); });
+initGenderChips('seasonGenderChips', sState, '기준 성별',
+  () => { if (sState.stack.length) loadSeasonDrill(); else loadSeason(); });
 initAgeChips('catAgeChips', ctState, '기준 연령 (복수 선택, 기본 40·50·60대)', () => loadCategories());
+initGenderChips('catGenderChips', ctState, '기준 성별', () => loadCategories());
 initAgeChips('deepAgeChips', dState, '기준 연령 (복수 선택, 기본 40·50·60대)',
   () => { if (document.getElementById('deepInput').value.trim()) runDeep(); });
+initGenderChips('deepGenderChips', dState, '기준 성별',
+  () => { if (document.getElementById('deepInput').value.trim()) runDeep(); });
 initAgeChips('brandAgeChips', bState, '기준 연령 (복수 선택, 기본 40·50·60대)',
+  () => { if (bState.stack.length) loadBrandNode(); });
+initGenderChips('brandGenderChips', bState, '기준 성별',
   () => { if (bState.stack.length) loadBrandNode(); });
 
 (async () => {

@@ -309,7 +309,7 @@ http.createServer(async (req, res) => {
     return;
   }
 
-  // ── 카테고리별 인기 검색어 TOP (선택 연령대 여성 기준, 최근 4주) ──
+  // ── 카테고리별 인기 검색어 TOP (선택 연령대·성별 기준, 최근 4주) ──
   if (pathname === '/api/keywordrank') {
     const cid = query.cid;
     const count = Math.min(parseInt(query.count) || 20, 100);
