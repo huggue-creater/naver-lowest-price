@@ -309,12 +309,15 @@ http.createServer(async (req, res) => {
     return;
   }
 
-  // ── 카테고리별 인기 검색어 TOP (4060 여성, 최근 4주) ──
+  // ── 카테고리별 인기 검색어 TOP (선택 연령대 여성 기준, 최근 4주) ──
   if (pathname === '/api/keywordrank') {
     const cid = query.cid;
     const count = Math.min(parseInt(query.count) || 20, 100);
     if (!cid || !/^\d+$/.test(cid)) { send(res, 400, '{}'); return; }
-    const key = `rank:${cid}:${count}`;
+    // 연령/성별은 클라이언트가 조회 조건으로 지정 — 형식이 어긋나면 기본값(40,50,60 / f)으로 대체
+    const age = /^(10|20|30|40|50|60)(,(10|20|30|40|50|60))*$/.test(query.age || '') ? query.age : '40,50,60';
+    const gender = ['f', 'm'].includes(query.gender) ? query.gender : 'f';
+    const key = `rank:${cid}:${count}:${age}:${gender}`;
     const cached = cacheGet(key);
     if (cached) { send(res, 200, cached); return; }
     try {
@@ -323,7 +326,7 @@ http.createServer(async (req, res) => {
       const end = new Date(now); end.setDate(now.getDate() - back);       // 지난 일요일
       const start = new Date(end); start.setDate(end.getDate() - 27);      // 최근 4주
       const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      const form = `cid=${cid}&timeUnit=week&startDate=${fmt(start)}&endDate=${fmt(end)}&age=40,50,60&gender=f&device=&page=1&count=${count}`;
+      const form = `cid=${cid}&timeUnit=week&startDate=${fmt(start)}&endDate=${fmt(end)}&age=${age}&gender=${gender}&device=&page=1&count=${count}`;
       const r = await new Promise((resolve, reject) => {
         const req2 = https.request({
           hostname: 'datalab.naver.com',

@@ -56,8 +56,6 @@
   header { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
   header h1 { font-size:22px; letter-spacing:-.5px; font-family:var(--font-head); }
   header h1 em { font-style:normal; color:var(--accent); }
-  .target-chip { background:var(--accent); color:#fff; border-radius:999px; padding:5px 14px; font-size:12.5px; font-weight:600; }
-  body[data-theme="dark"] .target-chip { color:#06202a; box-shadow:0 0 12px rgba(34,211,238,.4); }
   .head-right { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .sub-note { color:var(--sub); font-size:12.5px; margin-bottom:18px; }
 
@@ -212,7 +210,6 @@
 
   <header>
     <h1>📊 <em>트렌드</em> 인사이트 대시보드</h1>
-    <span class="target-chip">타겟: 40~60대 여성</span>
     <div class="head-right">
       <span id="statusBadge" style="font-size:12px;color:var(--sub)"></span>
       <div class="theme-seg" id="themeSeg">
@@ -261,15 +258,7 @@
       </div>
       <div class="chips" id="bestCrumb"></div>
       <div class="chips" id="bestChildChips"></div>
-      <div class="chips" id="ageChips">
-        <span class="chips-label">🔥 기준 연령 (복수 선택 · 선택 연령의 상승 모멘텀순 정렬, 기본 40·50·60대)</span>
-        <button class="chip age" data-g="10">10대</button>
-        <button class="chip age" data-g="20">20대</button>
-        <button class="chip age" data-g="30">30대</button>
-        <button class="chip age on" data-g="40">40대</button>
-        <button class="chip age on" data-g="50">50대</button>
-        <button class="chip age on" data-g="60">60대</button>
-      </div>
+      <div class="chips" id="ageChips"></div>
       <div id="bestBody" style="margin-top:8px"><div class="loading"><span class="spinner"></span>데이터랩 조회 중...</div></div>
     </div>
   </div>
@@ -294,15 +283,7 @@
       </div>
       <div class="chips" id="seasonCrumb"></div>
       <div class="chips" id="seasonChildChips"></div>
-      <div class="chips" id="seasonAgeChips">
-        <span class="chips-label">🗓️ 기준 연령 (복수 선택 · 선택 연령의 전년 패턴 상승률순 정렬, 기본 40·50·60대)</span>
-        <button class="chip age" data-g="10">10대</button>
-        <button class="chip age" data-g="20">20대</button>
-        <button class="chip age" data-g="30">30대</button>
-        <button class="chip age on" data-g="40">40대</button>
-        <button class="chip age on" data-g="50">50대</button>
-        <button class="chip age on" data-g="60">60대</button>
-      </div>
+      <div class="chips" id="seasonAgeChips"></div>
       <div class="chips">
         <span class="chips-label">편성 리드타임</span>
         <select id="leadSel" onchange="sState.lead=+this.value;renderSeason()">
@@ -318,10 +299,11 @@
   <!-- ② 카테고리 트렌드 -->
   <div class="panel" id="pCat">
     <div class="card">
-      <h2>카테고리 클릭 트렌드 (4060 여성)</h2>
-      <div class="desc">네이버 쇼핑 공식 분류 체계를 그대로 따라 내려갑니다. <b>하위 탐색 칩(›)</b>을 누르면 그 분류의 세부 카테고리 트렌드로 전환되고, 위치 경로를 누르면 상위로 돌아갑니다. 각 카테고리를 자체 최대값=100으로 지수화해 추세 비교가 가능하며, 범례 클릭으로 표시/숨김. 집계가 끝난 주(월~일)까지만 표시합니다.</div>
+      <h2>카테고리 클릭 트렌드</h2>
+      <div class="desc">네이버 쇼핑 공식 분류 체계를 그대로 따라 내려갑니다. <b>하위 탐색 칩(›)</b>을 누르면 그 분류의 세부 카테고리 트렌드로 전환되고, 위치 경로를 누르면 상위로 돌아갑니다. 각 카테고리를 자체 최대값=100으로 지수화해 추세 비교가 가능하며, 범례 클릭으로 표시/숨김. 집계가 끝난 주(월~일)까지만 표시합니다. 아래 <b>기준 연령</b>을 선택하면 그 연령대 여성 기준으로 다시 조회합니다(기본값: 40·50·60대).</div>
       <div class="chips" id="catCrumb"></div>
       <div class="chips" id="catChildChips"></div>
+      <div class="chips" id="catAgeChips"></div>
       <div class="desc" id="catStatus" style="margin-bottom:6px"></div>
       <div class="chart-box"><canvas id="catChart"></canvas></div>
     </div>
@@ -335,7 +317,7 @@
   <div class="panel" id="pDeep">
     <div class="card">
       <h2>키워드 심층분석</h2>
-      <div class="desc">키워드를 입력하면 ① 4060 여성 vs 전체 검색 트렌드 비교 ② 쇼핑 클릭 연령 구성(4060 적합도) ③ 관련 상품/브랜드를 분석합니다. 쉼표로 최대 3개 비교 가능.</div>
+      <div class="desc">키워드를 입력하면 ① 선택 연령대 vs 전체 검색 트렌드 비교 ② 쇼핑 클릭 연령 구성(선택 연령대 적합도) ③ 관련 상품/브랜드를 분석합니다. 쉼표로 최대 3개 비교 가능. 아래 <b>기준 연령</b>으로 비교 기준을 바꿀 수 있습니다(기본값: 40·50·60대).</div>
       <div class="search-row">
         <input type="text" id="deepInput" placeholder="예: 콜라겐, 린넨원피스, 안마의자" onkeydown="if(event.key==='Enter')runDeep()">
         <select id="deepCat" onchange="onDeepCatChange(1)"></select>
@@ -343,6 +325,7 @@
         <select id="deepCat3" style="display:none"></select>
         <button class="btn primary" onclick="runDeep()">분석</button>
       </div>
+      <div class="chips" id="deepAgeChips"></div>
       <div id="deepResult"><div class="empty">키워드를 입력해 주세요.</div></div>
     </div>
   </div>
@@ -351,9 +334,10 @@
   <div class="panel" id="pBrand">
     <div class="card">
       <h2>상승 키워드 기반 브랜드/상품군 추천</h2>
-      <div class="desc">선택한 카테고리(세부 분류 가능)의 <b>네이버 인기 검색어(4060 여성) 중 상승 모멘텀 상위 5개</b>로 쇼핑 검색을 집계해, 4060 타겟 소비로 이어질 확률이 높은 브랜드와 상품군을 추천합니다. 가격은 네이버 최저가 기준(카탈로그 상품은 "네이버 최저가" 표시).</div>
+      <div class="desc">선택한 카테고리(세부 분류 가능)의 <b>네이버 인기 검색어(선택 연령대 여성) 중 상승 모멘텀 상위 5개</b>로 쇼핑 검색을 집계해, 선택 연령대 타겟 소비로 이어질 확률이 높은 브랜드와 상품군을 추천합니다. 가격은 네이버 최저가 기준(카탈로그 상품은 "네이버 최저가" 표시). 아래 <b>기준 연령</b>으로 기준을 바꿀 수 있습니다(기본값: 40·50·60대).</div>
       <div class="chips" id="brandCrumb"></div>
       <div class="chips" id="brandChildChips"></div>
+      <div class="chips" id="brandAgeChips"></div>
       <div id="brandBody"><div class="empty">카테고리를 선택하세요.</div></div>
     </div>
   </div>
@@ -410,7 +394,28 @@ const PALETTES = {
 function palette() { return PALETTES[document.body.dataset.theme] || PALETTES.toss; }
 const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', selAges: ['40','50','60'] };
 const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, selAges: ['40','50','60'] }; // 시즌 선행 탭 상태
-const bState = { stack: [] }; // 브랜드/상품 추천 탭 상태
+const bState = { stack: [], selAges: ['40','50','60'] }; // 브랜드/상품 추천 탭 상태
+const dState = { selAges: ['40','50','60'] }; // 키워드 심층분석 탭 상태
+
+/* 쇼핑인사이트 연령대(10대 단위) → 검색어트렌드 연령 그룹 코드 매핑
+   (7~11이 곧 40·50·60대 구간이라 기존 하드코딩 값과 정확히 일치) */
+const SEARCH_AGE_MAP = { '10':['1','2'], '20':['3','4'], '30':['5','6'], '40':['7','8'], '50':['9','10'], '60':['11'] };
+function toSearchAgeCodes(decades) { return [...new Set(decades.flatMap(d => SEARCH_AGE_MAP[d] || []))]; }
+
+/* 연령 선택 칩 공용 렌더러: 복수 선택, 최소 1개 유지. 선택이 바뀌면 onChange로 재조회 */
+function initAgeChips(containerId, stateObj, label, onChange) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<span class="chips-label">${label}</span>` +
+    ['10','20','30','40','50','60'].map(g => `<button class="chip age${stateObj.selAges.includes(g) ? ' on' : ''}" data-g="${g}">${g}대</button>`).join('');
+  el.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+    const g = ch.dataset.g;
+    const next = stateObj.selAges.includes(g) ? stateObj.selAges.filter(x => x !== g) : [...stateObj.selAges, g];
+    if (!next.length) return; // 최소 1개 연령은 유지
+    stateObj.selAges = next.sort((a,b) => +a - +b);
+    el.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', stateObj.selAges.includes(x.dataset.g)));
+    onChange();
+  });
+}
 
 /* ══ 카테고리 드릴다운 공용 컴포넌트 ══
    루트 = 대분류 8개, 그 아래는 네이버 분류 트리를 실시간 조회.
@@ -446,9 +451,9 @@ function drillNav(crumbId, chipsId, obj, onChange) {
   return render;
 }
 
-/* 카테고리별 네이버 인기 검색어 TOP (4060 여성, 최근 4주, 서버 캐시) */
-async function fetchKeywordRank(cid, count = 20) {
-  const r = await fetch(`/api/keywordrank?cid=${cid}&count=${count}`);
+/* 카테고리별 네이버 인기 검색어 TOP (선택 연령대 여성 기준, 최근 4주, 서버 캐시) */
+async function fetchKeywordRank(cid, count = 20, ages = ['40','50','60'], gender = 'f') {
+  const r = await fetch(`/api/keywordrank?cid=${cid}&count=${count}&age=${ages.join(',')}&gender=${gender}`);
   if (!r.ok) throw new Error('인기 검색어 조회 실패');
   return ((await r.json()).ranks || []).map(x => x.keyword);
 }
@@ -651,16 +656,6 @@ document.querySelectorAll('#typeChips .chip').forEach(ch => ch.onclick = () => {
   renderBestTable();
 });
 
-/* 기준 연령 칩: 복수 선택, 최소 1개는 항상 유지. 선택이 바뀌면 그 연령 기준으로 전체를 재조회한다 */
-document.querySelectorAll('#ageChips .chip').forEach(ch => ch.onclick = () => {
-  const g = ch.dataset.g;
-  const next = state.selAges.includes(g) ? state.selAges.filter(x => x !== g) : [...state.selAges, g];
-  if (!next.length) return; // 최소 1개 연령은 유지
-  state.selAges = next.sort((a,b) => +a - +b);
-  document.querySelectorAll('#ageChips .chip').forEach(x => x.classList.toggle('on', state.selAges.includes(x.dataset.g)));
-  if (state.stack.length) loadBestDrill(); else loadBest();
-});
-
 function renderBestTable() {
   let rows = state.stack.length
     ? state.drillRows
@@ -841,16 +836,6 @@ document.querySelectorAll('#seasonTypeChips .chip').forEach(ch => ch.onclick = (
   sState.type = ch.dataset.t;
   renderSeason();
 });
-/* 시즌 탭 기준 연령 칩: 복수 선택, 최소 1개 유지. 선택이 바뀌면 그 연령 기준 전년 데이터를 재조회한다 */
-document.querySelectorAll('#seasonAgeChips .chip').forEach(ch => ch.onclick = () => {
-  const g = ch.dataset.g;
-  const next = sState.selAges.includes(g) ? sState.selAges.filter(x => x !== g) : [...sState.selAges, g];
-  if (!next.length) return; // 최소 1개 연령은 유지
-  sState.selAges = next.sort((a,b) => +a - +b);
-  document.querySelectorAll('#seasonAgeChips .chip').forEach(x => x.classList.toggle('on', sState.selAges.includes(x.dataset.g)));
-  if (sState.stack.length) loadSeasonDrill(); else loadSeason();
-});
-
 function renderSeason() {
   const body = document.getElementById('seasonBody');
   const src = sState.stack.length ? sState.drillRows : sState.rows;
@@ -901,7 +886,7 @@ function renderSeasonInsights(rows, mLabel) {
 }
 
 /* ══════════════ ② 카테고리 트렌드 (네이버 분류 드릴다운) ══════════════ */
-const ctState = { stack: [] }; // 드릴다운 경로. 비어있으면 대분류 8개
+const ctState = { stack: [], selAges: ['40','50','60'] }; // 드릴다운 경로. 비어있으면 대분류 8개
 
 async function fetchChildren(cid) {
   const r = await fetch('/api/category?cid=' + cid);
@@ -953,7 +938,7 @@ async function loadCategories() {
       jobs.push(datalab('shopping/categories', {
         startDate, endDate, timeUnit:'week',
         category: chunk.map(c => ({ name: c.name, param: [c.cid] })),
-        gender: 'f', ages: ['40','50','60'],
+        gender: 'f', ages: ctState.selAges,
       }));
     }
     const resAll = (await Promise.all(jobs)).flatMap(j => j.results || []);
@@ -1031,10 +1016,11 @@ async function runDeep(kwOverride, cidOverride) {
   const box = document.getElementById('deepResult');
   box.innerHTML = '<div class="loading"><span class="spinner"></span>분석 중...</div>';
   const { startDate, endDate } = dateRange();
+  const ageLbl = `${dState.selAges.join('·')}대`;
 
   const groups = kws.map(k => ({ groupName: k, keywords: [k] }));
   const [target, all, ageRes, genderRes, shop] = await Promise.allSettled([
-    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups, gender:'f', ages:['7','8','9','10','11'] }),
+    datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups, gender:'f', ages: toSearchAgeCodes(dState.selAges) }),
     datalab('search', { startDate, endDate, timeUnit:'week', keywordGroups: groups }),
     datalab('shopping/keyword/age',    { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
     datalab('shopping/keyword/gender', { startDate, endDate, timeUnit:'week', category: cid, keyword: kws[0] }),
@@ -1046,7 +1032,7 @@ async function runDeep(kwOverride, cidOverride) {
   // ── 트렌드 비교 차트 ──
   if (target.status === 'fulfilled' && all.status === 'fulfilled') {
     html += `<div class="grid2">
-      <div class="card" style="margin:0"><h2>4060 여성 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartT"></canvas></div></div>
+      <div class="card" style="margin:0"><h2>${ageLbl} 여성 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartT"></canvas></div></div>
       <div class="card" style="margin:0"><h2>전체 검색 트렌드</h2><div class="chart-box sm"><canvas id="deepChartA"></canvas></div></div>
     </div>`;
   } else if (state.datalabOff) {
@@ -1062,7 +1048,7 @@ async function runDeep(kwOverride, cidOverride) {
     });
     const total = Object.values(byGroup).reduce((a,b) => a+b, 0);
     if (total > 0) {
-      const fit = (['40','50','60'].reduce((a,g) => a + (byGroup[g]||0), 0) / total * 100);
+      const fit = (dState.selAges.reduce((a,g) => a + (byGroup[g]||0), 0) / total * 100);
       let femaleShare = null;
       if (genderRes.status === 'fulfilled') {
         const g2 = {};
@@ -1072,8 +1058,8 @@ async function runDeep(kwOverride, cidOverride) {
       }
       fitHtml = `<div class="grid2" style="margin-top:16px">
         <div class="card" style="margin:0">
-          <h2>"${esc(kws[0])}" 4060 타겟 적합도</h2>
-          <div class="desc">쇼핑 클릭 중 40·50·60대 비중${femaleShare!==null ? ` · 여성 비중 ${femaleShare.toFixed(0)}%` : ''}</div>
+          <h2>"${esc(kws[0])}" ${ageLbl} 타겟 적합도</h2>
+          <div class="desc">쇼핑 클릭 중 ${ageLbl} 비중${femaleShare!==null ? ` · 여성 비중 ${femaleShare.toFixed(0)}%` : ''}</div>
           <div class="fit-score"><div class="num">${fit.toFixed(0)}점</div>
           <div class="lbl">${fit >= 60 ? '핵심 타겟 상품 — 방송/프로모션 최우선 후보' : fit >= 40 ? '타겟 적합 — 소구점 보강 시 유효' : '타겟 비중 낮음 — 젊은층 상품일 가능성'}</div></div>
         </div>
@@ -1114,12 +1100,16 @@ async function runDeep(kwOverride, cidOverride) {
     const byGroup = {};
     (ageRes.value.results?.[0]?.data || []).forEach(d => byGroup[d.group] = (byGroup[d.group]||0) + d.ratio);
     const order = ['10','20','30','40','50','60'];
-    makeChart('deepAgeChart', () => ({ type:'doughnut',
-      data:{ labels: order.map(g => g + '대'),
-        datasets:[{ data: order.map(g => +(byGroup[g]||0).toFixed(1)),
-          // 10~30대는 회색 계열, 40·50·60대는 테마 포인트 컬러
-          backgroundColor:[cssVar('--line'), cssVar('--line'), cssVar('--sub'), cssVar('--accent'), cssVar('--secondary'), cssVar('--tertiary')] }] },
-      options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } } }));
+    makeChart('deepAgeChart', () => {
+      const pal = palette();
+      // 선택된 연령대만 팔레트 컬러로, 나머지는 회색 계열로 표시
+      let selIdx = 0;
+      const colors = order.map(g => dState.selAges.includes(g) ? pal[selIdx++ % pal.length] : cssVar('--line'));
+      return { type:'doughnut',
+        data:{ labels: order.map(g => g + '대'),
+          datasets:[{ data: order.map(g => +(byGroup[g]||0).toFixed(1)), backgroundColor: colors }] },
+        options:{ maintainAspectRatio:false, plugins:{ legend:{ position:'right' } } } };
+    });
   }
 }
 function prodCard(it) {
@@ -1170,7 +1160,7 @@ async function loadBrandNode() {
   box.innerHTML = `<div class="loading"><span class="spinner"></span>"${esc(node.name)}" 인기 검색어·브랜드 집계 중...</div>`;
   try {
     // 인기 검색어 10개 → 모멘텀 계산 → 상승 상위 5개 선정
-    const ranked = await fetchKeywordRank(node.cid, 10);
+    const ranked = await fetchKeywordRank(node.cid, 10, bState.selAges);
     if (!ranked.length) throw new Error('인기 검색어 없음');
     const growthMap = new Map();
     let kws = ranked.slice(0, 5);
@@ -1182,7 +1172,7 @@ async function loadBrandNode() {
         jobs.push(datalab('shopping/keywords', {
           startDate, endDate, timeUnit:'week', category: node.cid,
           keyword: chunk.map(k => ({ name: k, param: [k] })),
-          gender: 'f', ages: ['40','50','60'],
+          gender: 'f', ages: bState.selAges,
         }));
       }
       const res = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
@@ -1246,6 +1236,16 @@ async function openDetail(kw, cat) {
 function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
 
 /* ══════════════ 초기화 ══════════════ */
+initAgeChips('ageChips', state, '🔥 기준 연령 (복수 선택 · 선택 연령의 상승 모멘텀순 정렬, 기본 40·50·60대)',
+  () => { if (state.stack.length) loadBestDrill(); else loadBest(); });
+initAgeChips('seasonAgeChips', sState, '🗓️ 기준 연령 (복수 선택 · 선택 연령의 전년 패턴 상승률순 정렬, 기본 40·50·60대)',
+  () => { if (sState.stack.length) loadSeasonDrill(); else loadSeason(); });
+initAgeChips('catAgeChips', ctState, '기준 연령 (복수 선택, 기본 40·50·60대)', () => loadCategories());
+initAgeChips('deepAgeChips', dState, '기준 연령 (복수 선택, 기본 40·50·60대)',
+  () => { if (document.getElementById('deepInput').value.trim()) runDeep(); });
+initAgeChips('brandAgeChips', bState, '기준 연령 (복수 선택, 기본 40·50·60대)',
+  () => { if (bState.stack.length) loadBrandNode(); });
+
 (async () => {
   applyTheme(localStorage.getItem('theme4060') || 'toss');
   initDeepCat();
