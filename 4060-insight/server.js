@@ -141,7 +141,7 @@ function safeEqual(a, b) {
 function renderLogin(error) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>4060 인사이트 대시보드</title>
+<title>트렌드 인사이트 대시보드</title>
 <style>
   *{box-sizing:border-box} body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1115;color:#e6e6e6;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
   form{background:#1a1d24;padding:32px 28px;border-radius:12px;width:280px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
@@ -152,7 +152,7 @@ function renderLogin(error) {
   .err{color:#ff6b6b;font-size:13px;margin:-4px 0 12px}
 </style></head><body>
 <form method="post" action="/login">
-  <h1>🔒 4060 인사이트 대시보드</h1>
+  <h1>🔒 트렌드 인사이트 대시보드</h1>
   ${error ? `<div class="err">${error}</div>` : ''}
   <input type="password" name="password" placeholder="비밀번호" autofocus required>
   <button type="submit">입장</button>
@@ -418,7 +418,7 @@ http.createServer(async (req, res) => {
 // 로컬은 루프백(127.0.0.1)에만 바인딩 — 공개 배포(PORT 지정) 시에만 0.0.0.0으로 연다.
 // 공개 배포는 REQUIRE_AUTH가 강제되어 있어(위 검증) 비밀번호 없이는 접근할 수 없다.
 }).listen(PORT, HOST, () => {
-  console.log(`\n✅  4060 인사이트 대시보드 실행 중 → http://${IS_CLOUD ? '0.0.0.0' : 'localhost'}:${PORT}`);
+  console.log(`\n✅  트렌드 인사이트 대시보드 실행 중 → http://${IS_CLOUD ? '0.0.0.0' : 'localhost'}:${PORT}`);
   if (REQUIRE_AUTH) console.log('   🔒 비밀번호 보호 활성화됨 (최초 접속 시 /login)');
   console.log('   데이터랩 API 미연동 시 대시보드 상단 안내를 따라 권한을 추가하세요.\n');
   // 자동 시작(백그라운드) 모드나 공개 배포 환경에서는 브라우저를 띄우지 않음

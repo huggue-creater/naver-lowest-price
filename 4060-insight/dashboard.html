@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>4060 인사이트 대시보드 — 현대홈쇼핑</title>
+<title>트렌드 인사이트 대시보드 — 현대홈쇼핑</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,16 +111,6 @@
   .growth.up { color:var(--up); } .growth.down { color:var(--down); } .growth.flat { color:var(--sub); }
   .spark { width:110px; height:30px; }
 
-  /* 타겟 적합도 셀 */
-  .fit-cell b { font-size:14.5px; font-family:var(--font-num); }
-  .type-badge { display:inline-block; border-radius:5px; padding:1.5px 7px; font-size:10.5px; font-weight:700; margin-left:6px; vertical-align:1px; }
-  .type-badge.core { background:var(--accent-soft); color:var(--accent); }
-  .type-badge.all  { background:var(--line); color:var(--sub); }
-  .type-badge.young{ background:transparent; border:1px dashed var(--line); color:var(--sub); }
-  .agebar { display:flex; height:7px; border-radius:4px; overflow:hidden; margin-top:5px; width:150px; background:var(--line); }
-  .agebar span { height:100%; }
-  .agebar-legend { font-size:10.5px; color:var(--sub); margin-top:3px; }
-  .agebar-legend i { display:inline-block; width:8px; height:8px; border-radius:2px; margin:0 3px 0 8px; vertical-align:-1px; }
   .calc { color:var(--sub); font-size:12px; }
 
   .insight-box { background:var(--tint); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:16px; }
@@ -198,7 +188,6 @@
     .brand-list { grid-template-columns:1fr 1fr; }
     .modal-bg.show { padding:14px 8px; }
     .modal { padding:20px 14px; }
-    .agebar { width:100%; max-width:220px; }
     .fit-score .num { font-size:34px; }
 
     /* 키워드 표 → 카드형 변환 (가로 스크롤 없이 읽히도록) */
@@ -222,7 +211,7 @@
 <div class="wrap">
 
   <header>
-    <h1>📊 <em>4060</em> 인사이트 대시보드</h1>
+    <h1>📊 <em>트렌드</em> 인사이트 대시보드</h1>
     <span class="target-chip">타겟: 40~60대 여성</span>
     <div class="head-right">
       <span id="statusBadge" style="font-size:12px;color:var(--sub)"></span>
@@ -234,7 +223,7 @@
       <button class="btn" onclick="hardRefresh()">🔄 데이터 새로고침</button>
     </div>
   </header>
-  <div class="sub-note">네이버 데이터랩(검색어트렌드·쇼핑인사이트) + 쇼핑 검색 API 기반 · 트렌드 수치는 기간 내 상대지수(최대 100) · 적합도는 쇼핑 클릭 연령 구성 기준 · 데이터는 6시간 캐시</div>
+  <div class="sub-note">네이버 데이터랩(검색어트렌드·쇼핑인사이트) + 쇼핑 검색 API 기반 · 트렌드 수치는 기간 내 상대지수(최대 100) · 모멘텀은 선택한 연령대 기준(기본 40·50·60대) · 데이터는 6시간 캐시</div>
 
   <div class="banner" id="setupBanner">
     <b>⚠️ 데이터랩 API 권한이 아직 등록되지 않았습니다.</b> 트렌드/랭킹 기능을 사용하려면 아래 절차로 권한을 추가하세요. (승인 대기 없이 즉시 적용)
@@ -263,7 +252,7 @@
     <div class="card">
       <h2>4060 여성 관심 상승 키워드 랭킹</h2>
       <div class="desc"><b>🏠 전체</b>에서는 홈쇼핑 주력 큐레이션 키워드 풀(상품 80개 + 브랜드 64개)을, <b>카테고리를 선택하면 그 분류의 네이버 실제 인기 검색어 TOP 20(4060 여성 기준)</b>을 분석합니다. 하위 탐색으로 세부 분류(예: 화장품/미용 › 스킨케어)까지 내려갈 수 있습니다.
-        <b>타겟 적합도</b>는 해당 키워드 클릭자 중 40·50·60대 비중(%)입니다. 행을 클릭하면 상세 분석이 열립니다.</div>
+        아래 <b>기준 연령</b>을 선택하면 그 연령대의 최근 2주 검색 모멘텀으로 다시 계산해 상승순으로 정렬합니다(기본값: 40·50·60대). 행을 클릭하면 상세 분석이 열립니다.</div>
       <div class="chips" id="typeChips">
         <span class="chips-label">키워드 유형</span>
         <button class="chip on" data-t="all">전체</button>
@@ -272,19 +261,15 @@
       </div>
       <div class="chips" id="bestCrumb"></div>
       <div class="chips" id="bestChildChips"></div>
-      <div class="chips" id="sortChips">
-        <span class="chips-label">정렬</span>
-        <button class="chip on" data-s="momentum">🔥 상승 모멘텀</button>
-        <button class="chip" data-s="fit">🎯 4060 적합도</button>
-        <span class="chips-label" style="margin-left:10px">연령 비중 (복수 선택 = 합산 비중순)</span>
+      <div class="chips" id="ageChips">
+        <span class="chips-label">🔥 기준 연령 (복수 선택 · 선택 연령의 상승 모멘텀순 정렬, 기본 40·50·60대)</span>
         <button class="chip age" data-g="10">10대</button>
         <button class="chip age" data-g="20">20대</button>
         <button class="chip age" data-g="30">30대</button>
-        <button class="chip age" data-g="40">40대</button>
-        <button class="chip age" data-g="50">50대</button>
-        <button class="chip age" data-g="60">60대</button>
+        <button class="chip age on" data-g="40">40대</button>
+        <button class="chip age on" data-g="50">50대</button>
+        <button class="chip age on" data-g="60">60대</button>
       </div>
-      <div class="agebar-legend" id="ageLegend"></div>
       <div id="bestBody" style="margin-top:8px"><div class="loading"><span class="spinner"></span>데이터랩 조회 중...</div></div>
     </div>
   </div>
@@ -297,9 +282,9 @@
     </div>
     <div class="card">
       <h2>시즌 선행 분석 — 전년 패턴으로 미리 잡는 편성</h2>
-      <div class="desc">최근 15개월(65주)의 클릭 지수를 <b>하나의 척도로</b> 조회해(4060 여성 필터), 두 가지를 계산합니다.<br>
+      <div class="desc">최근 15개월(65주)의 클릭 지수를 <b>하나의 척도로</b> 조회해(선택 연령대 여성 기준, 기본 40·50·60대), 두 가지를 계산합니다.<br>
         ① <b>전년 동시즌 대비 올해</b>: 올해 최근 수치가 전년 같은 시점보다 얼마나 높은지(YoY)<br>
-        ② <b>전년 패턴 상승률</b>: 전년에 "지금 시점 → 리드타임 후 시점"으로 검색이 얼마나 늘었는지 — <b>이 값이 큰 키워드가 지금 소싱·조건협의를 시작해야 할 후보</b>입니다.<br>
+        ② <b>전년 패턴 상승률</b>: 전년에 "지금 시점 → 리드타임 후 시점"으로 검색이 얼마나 늘었는지 — <b>이 값이 큰 키워드가 지금 소싱·조건협의를 시작해야 할 후보</b>이며, 항상 이 상승률이 높은 순으로 정렬합니다.<br>
         미니차트: 전년 시즌 흐름이며 <b style="color:var(--accent)">●</b> 전년의 현재 시점, <b style="color:var(--up)">●</b> 리드타임 후 시점입니다. 행 클릭 시 심층분석.</div>
       <div class="chips" id="seasonTypeChips">
         <span class="chips-label">키워드 유형</span>
@@ -309,17 +294,14 @@
       </div>
       <div class="chips" id="seasonCrumb"></div>
       <div class="chips" id="seasonChildChips"></div>
-      <div class="chips" id="seasonSortChips">
-        <span class="chips-label">정렬</span>
-        <button class="chip on" data-s="lift">🗓️ 전년 패턴 상승률</button>
-        <button class="chip" data-s="fit">🎯 4060 적합도</button>
-        <span class="chips-label" style="margin-left:10px">연령 비중 (복수 선택 = 합산 비중순)</span>
+      <div class="chips" id="seasonAgeChips">
+        <span class="chips-label">🗓️ 기준 연령 (복수 선택 · 선택 연령의 전년 패턴 상승률순 정렬, 기본 40·50·60대)</span>
         <button class="chip age" data-g="10">10대</button>
         <button class="chip age" data-g="20">20대</button>
         <button class="chip age" data-g="30">30대</button>
-        <button class="chip age" data-g="40">40대</button>
-        <button class="chip age" data-g="50">50대</button>
-        <button class="chip age" data-g="60">60대</button>
+        <button class="chip age on" data-g="40">40대</button>
+        <button class="chip age on" data-g="50">50대</button>
+        <button class="chip age on" data-g="60">60대</button>
       </div>
       <div class="chips">
         <span class="chips-label">편성 리드타임</span>
@@ -329,7 +311,6 @@
           <option value="3">3개월</option>
         </select>
       </div>
-      <div class="agebar-legend" id="seasonAgeLegend"></div>
       <div id="seasonBody"><div class="loading"><span class="spinner"></span>전년 데이터 조회 중...</div></div>
     </div>
   </div>
@@ -427,8 +408,8 @@ const PALETTES = {
   pastel: ['#ef7fa4','#8fb7e8','#a8d8b9','#f5b971','#b79ce8','#f2a7c3','#7fd0d8','#c9b8a8'],
 };
 function palette() { return PALETTES[document.body.dataset.theme] || PALETTES.toss; }
-const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', sortBy: 'momentum', sortAges: [], fitLoading: false };
-const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, sortBy: 'lift', sortAges: [] }; // 시즌 선행 탭 상태
+const state = { best: [], drillRows: [], stack: [], datalabOff: false, charts: {}, chartCfgs: {}, kwType: 'all', selAges: ['40','50','60'] };
+const sState = { rows: [], drillRows: [], stack: [], loaded: false, type: 'all', lead: 2, selAges: ['40','50','60'] }; // 시즌 선행 탭 상태
 const bState = { stack: [] }; // 브랜드/상품 추천 탭 상태
 
 /* ══ 카테고리 드릴다운 공용 컴포넌트 ══
@@ -486,8 +467,6 @@ function applyTheme(t) {
     const canvas = document.getElementById(id);
     if (canvas && canvas.isConnected) makeChart(id, cfgFn);
   }
-  // 스파크라인·연령 막대도 테마 색으로 다시 그리기
-  renderAgeLegend('ageLegend', activeAgesOf(state.sortBy, state.sortAges));
   if (state.best.length) renderBestTable();
   if (sState.rows.length) renderSeason();
 }
@@ -587,6 +566,7 @@ async function hardRefresh() {
 async function loadBest() {
   const { startDate, endDate } = dateRange();
   const body = document.getElementById('bestBody');
+  body.innerHTML = '<div class="loading"><span class="spinner"></span>데이터랩 조회 중...</div>';
   try {
     const jobs = [];
     for (const cat of CATS) {
@@ -598,7 +578,7 @@ async function loadBest() {
             datalab('shopping/keywords', {
               startDate, endDate, timeUnit:'week', category: cat.cid,
               keyword: chunk.map(k => ({ name: k, param: [k] })),
-              gender: 'f', ages: ['40','50','60'],
+              gender: 'f', ages: state.selAges,
             }).then(j => ({ cat, type, results: j.results || [] }))
           );
         }
@@ -610,7 +590,7 @@ async function loadBest() {
       if (s.status !== 'fulfilled') continue;
       for (const r of s.value.results) {
         const g = growthOf(r.data);
-        rows.push({ kw: r.title, cat: s.value.cat, type: s.value.type, growth: g, series: (r.data||[]).map(d => d.ratio), fit: null, ageShares: null });
+        rows.push({ kw: r.title, cat: s.value.cat, type: s.value.type, growth: g, series: (r.data||[]).map(d => d.ratio) });
       }
     }
     if (!rows.length) throw new Error('데이터 없음');
@@ -619,97 +599,11 @@ async function loadBest() {
     renderBestTable();
     renderInsights(rows);
     document.getElementById('statusBadge').textContent = `기준: ${startDate} ~ ${endDate} (주간)`;
-    ensureFits(rows, refreshFitViews); // 타겟 적합도(연령 구성)는 백그라운드에서 채워짐
   } catch (e) {
     body.innerHTML = state.datalabOff
       ? '<div class="empty">데이터랩 API 권한 등록 후 이용 가능합니다. 상단 안내를 참고하세요.</div>'
       : `<div class="empty">조회 실패: ${e.message}</div>`;
   }
-}
-
-/* 키워드별 클릭 연령 구성 → 타겟 적합도 계산.
-   kw|cid 단위 전역 캐시(fitCache)를 공유해 베스트/시즌/드릴다운 어디서든 중복 호출 없이 재사용 (동시 6개 제한, 서버 6시간 캐시) */
-const fitCache = new Map();
-let fitJobsActive = 0;
-async function ensureFits(rows, onUpdate) {
-  const { startDate, endDate } = dateRange();
-  const queue = rows.filter(r => {
-    const c = fitCache.get(r.kw + '|' + r.cat.cid);
-    if (c) { r.fit = c.fit; r.ageShares = c.ageShares; return false; }
-    return r.fit === null || r.fit === undefined;
-  });
-  if (!queue.length) { onUpdate(); return; }
-  state.fitLoading = true; fitJobsActive++;
-  let done = 0;
-  async function worker() {
-    while (queue.length) {
-      const r = queue.shift();
-      try {
-        const j = await datalab('shopping/keyword/age', { startDate, endDate, timeUnit:'week', category: r.cat.cid, keyword: r.kw });
-        const by = {};
-        (j.results?.[0]?.data || []).forEach(d => by[d.group] = (by[d.group] || 0) + d.ratio);
-        const total = Object.values(by).reduce((a,b) => a+b, 0);
-        if (total > 0) {
-          r.ageShares = {};
-          for (const g of AGE_GROUPS) r.ageShares[g] = (by[g] || 0) / total * 100;
-          r.fit = r.ageShares['40'] + r.ageShares['50'] + r.ageShares['60'];
-          fitCache.set(r.kw + '|' + r.cat.cid, { fit: r.fit, ageShares: r.ageShares });
-        }
-      } catch(_) {}
-      done++;
-      if (done % 10 === 0) onUpdate(); // 10개 계산될 때마다 화면 갱신
-    }
-  }
-  await Promise.all(Array.from({ length: 6 }, worker));
-  if (--fitJobsActive === 0) state.fitLoading = false;
-  onUpdate();
-}
-function refreshFitViews() {
-  renderBestTable();
-  if (sState.rows.length || sState.drillRows.length) renderSeason();
-}
-
-function typeBadge(fit) {
-  if (fit === null || fit === undefined) return '';
-  if (fit >= 55) return '<span class="type-badge core">4060 특화</span>';
-  if (fit >= 40) return '<span class="type-badge all">전연령 공통</span>';
-  return '<span class="type-badge young">저연령 중심</span>';
-}
-const AGE_GROUPS = ['10','20','30','40','50','60'];
-/* 연령대별 고정 색: 40·50·60대는 테마 포인트 3색, 10·20·30대는 보조 3색 */
-function ageColors() {
-  const p = palette();
-  return { '10':p[3], '20':p[4], '30':p[5], '40':p[0], '50':p[1], '60':p[2] };
-}
-/* 막대에서 강조할 연령대: 연령 정렬 중이면 선택된 연령, 아니면 기본 40·50·60 */
-function activeAgesOf(sortBy, sortAges) {
-  return (sortBy === 'age' && sortAges.length) ? sortAges : ['40','50','60'];
-}
-function agebarHtml(shares, act) {
-  if (!shares) return '';
-  const colors = ageColors();
-  return '<div class="agebar">' +
-    AGE_GROUPS.map(g => `<span style="width:${shares[g].toFixed(1)}%;background:${act.includes(g) ? colors[g] : 'var(--line)'}"></span>`).join('') +
-    '</div>';
-}
-function renderAgeLegend(elId, act) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  const colors = ageColors();
-  el.innerHTML = '연령 구성 막대: ' +
-    AGE_GROUPS.map(g => `<i style="background:${act.includes(g) ? colors[g] : 'var(--line)'}"></i>${g}대`).join(' ') +
-    ' <span style="margin-left:6px">(회색 = 현재 강조하지 않는 연령)</span>';
-}
-function fitCell(r, sortBy, sortAges) {
-  if (r.fit !== null && r.fit !== undefined) {
-    let extra = '';
-    if (sortBy === 'age' && sortAges.length) {
-      const sum = sortAges.reduce((a,g) => a + (r.ageShares?.[g] || 0), 0);
-      extra = `<span class="calc" style="margin-left:6px">선택 ${sortAges.join('·')}대 ${sum.toFixed(0)}%</span>`;
-    }
-    return `<div class="fit-cell"><b>${r.fit.toFixed(0)}점</b>${typeBadge(r.fit)}${extra}${agebarHtml(r.ageShares, activeAgesOf(sortBy, sortAges))}</div>`;
-  }
-  return state.fitLoading ? '<span class="calc"><span class="spinner" style="width:10px;height:10px"></span>계산중</span>' : '<span class="calc">–</span>';
 }
 
 /* 베스트 탭 드릴다운: 카테고리 선택 시 네이버 인기 검색어 TOP 20(4060 여성) 기반으로 전환 */
@@ -732,7 +626,7 @@ async function loadBestDrill() {
       jobs.push(datalab('shopping/keywords', {
         startDate, endDate, timeUnit:'week', category: node.cid,
         keyword: chunk.map(k => ({ name: k, param: [k] })),
-        gender: 'f', ages: ['40','50','60'],
+        gender: 'f', ages: state.selAges,
       }));
     }
     const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
@@ -740,12 +634,11 @@ async function loadBestDrill() {
     const rows = resAll.map(r => ({
       kw: r.title, cat: { cid: node.cid, name: node.name }, type: 'rank',
       growth: growthOf(r.data), series: (r.data || []).map(d => d.ratio),
-      rank: rank.get(r.title) ?? 99, fit: null, ageShares: null,
+      rank: rank.get(r.title) ?? 99,
     })).sort((a, b) => a.rank - b.rank);
     if (state.stack.length && state.stack[state.stack.length - 1].cid !== node.cid) return; // 이동 중 응답 무시
     state.drillRows = rows;
     renderBestTable();
-    ensureFits(rows, refreshFitViews);
   } catch (e) {
     body.innerHTML = `<div class="empty">조회 실패: ${e.message}</div>`;
   }
@@ -758,48 +651,31 @@ document.querySelectorAll('#typeChips .chip').forEach(ch => ch.onclick = () => {
   renderBestTable();
 });
 
-/* 정렬 칩: 모멘텀/적합도는 단일 선택, 연령 칩은 복수 선택(합산 비중순) */
-document.querySelectorAll('#sortChips .chip').forEach(ch => ch.onclick = () => {
-  if (ch.dataset.s) {                       // 모멘텀 or 적합도
-    state.sortBy = ch.dataset.s;
-    state.sortAges = [];
-  } else {                                   // 연령 칩 토글
-    const g = ch.dataset.g;
-    state.sortAges = state.sortAges.includes(g)
-      ? state.sortAges.filter(x => x !== g)
-      : [...state.sortAges, g].sort((a,b) => +a - +b);
-    state.sortBy = state.sortAges.length ? 'age' : 'momentum';
-  }
-  document.querySelectorAll('#sortChips .chip').forEach(x => {
-    if (x.dataset.s) x.classList.toggle('on', state.sortBy === x.dataset.s);
-    else x.classList.toggle('on', state.sortAges.includes(x.dataset.g));
-  });
-  renderBestTable();
+/* 기준 연령 칩: 복수 선택, 최소 1개는 항상 유지. 선택이 바뀌면 그 연령 기준으로 전체를 재조회한다 */
+document.querySelectorAll('#ageChips .chip').forEach(ch => ch.onclick = () => {
+  const g = ch.dataset.g;
+  const next = state.selAges.includes(g) ? state.selAges.filter(x => x !== g) : [...state.selAges, g];
+  if (!next.length) return; // 최소 1개 연령은 유지
+  state.selAges = next.sort((a,b) => +a - +b);
+  document.querySelectorAll('#ageChips .chip').forEach(x => x.classList.toggle('on', state.selAges.includes(x.dataset.g)));
+  if (state.stack.length) loadBestDrill(); else loadBest();
 });
 
 function renderBestTable() {
-  renderAgeLegend('ageLegend', activeAgesOf(state.sortBy, state.sortAges));
-  const sort = state.sortBy;
-  const ageSum = r => state.sortAges.reduce((a,g) => a + (r.ageShares?.[g] ?? 0), 0);
   let rows = state.stack.length
     ? state.drillRows
     : state.best.filter(r => state.kwType === 'all' || r.type === state.kwType);
-  if (sort === 'momentum')      rows = [...rows].sort((a,b) => (b.growth ?? -999) - (a.growth ?? -999));
-  else if (sort === 'fit')      rows = [...rows].sort((a,b) => (b.fit ?? -1) - (a.fit ?? -1));
-  else /* 선택 연령 합산 비중 */ rows = [...rows].sort((a,b) => (b.ageShares ? ageSum(b) : -1) - (a.ageShares ? ageSum(a) : -1));
-  rows = rows.slice(0, 20);
+  rows = [...rows].sort((a,b) => (b.growth ?? -999) - (a.growth ?? -999)).slice(0, 20);
 
   const body = document.getElementById('bestBody');
   if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
-  const sortLbl = sort === 'age' ? `${state.sortAges.join('·')}대 비중순`
-    : { momentum:'모멘텀순', fit:'4060 적합도순' }[sort];
-  body.innerHTML = `<table class="resp"><thead><tr><th>${sortLbl}</th><th>키워드</th><th>최근 2주 모멘텀</th><th>타겟 적합도 · 연령 구성</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
+  const ageLbl = `${state.selAges.join('·')}대`;
+  body.innerHTML = `<table class="resp"><thead><tr><th>모멘텀순</th><th>키워드</th><th>${ageLbl} 최근 2주 모멘텀</th><th>10주 추이</th><th></th></tr></thead><tbody>` +
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
         <td class="cell-kw"><span class="kw-name">${esc(r.kw)}</span><span class="cat-tag">${esc(r.cat.name)}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
-        <td class="cell-half" data-label="최근 2주 모멘텀">${growthBadge(r.growth)}</td>
-        <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, state.sortBy, state.sortAges)}</td>
+        <td class="cell-half" data-label="${ageLbl} 최근 2주 모멘텀">${growthBadge(r.growth)}</td>
         <td class="cell-half" data-label="10주 추이"><canvas class="spark"></canvas></td>
         <td class="cell-btn" style="text-align:right"><button class="btn" style="padding:5px 10px;font-size:12px">상세 →</button></td>
       </tr>`).join('') + '</tbody></table>';
@@ -837,6 +713,7 @@ async function loadSeason() {
   sState.loaded = true;
   const { startDate, endDate } = dateRangeSeason();
   const body = document.getElementById('seasonBody');
+  body.innerHTML = '<div class="loading"><span class="spinner"></span>전년 데이터 조회 중...</div>';
   try {
     const jobs = [];
     for (const cat of CATS) {
@@ -847,7 +724,7 @@ async function loadSeason() {
             datalab('shopping/keywords', {
               startDate, endDate, timeUnit:'week', category: cat.cid,
               keyword: chunk.map(k => ({ name: k, param: [k] })),
-              gender: 'f', ages: ['40','50','60'],
+              gender: 'f', ages: sState.selAges,
             }).then(j => ({ cat, type, results: j.results || [] }))
           );
         }
@@ -891,18 +768,16 @@ async function loadSeasonDrill() {
       jobs.push(datalab('shopping/keywords', {
         startDate, endDate, timeUnit:'week', category: node.cid,
         keyword: chunk.map(k => ({ name: k, param: [k] })),
-        gender: 'f', ages: ['40','50','60'],
+        gender: 'f', ages: sState.selAges,
       }));
     }
     const resAll = (await Promise.allSettled(jobs)).filter(s => s.status === 'fulfilled').flatMap(s => s.value.results || []);
     const rows = resAll.map(r => ({
       kw: r.title, cat: { cid: node.cid, name: node.name }, type: 'rank', data: r.data || [],
-      fit: null, ageShares: null,
     }));
     if (sState.stack.length && sState.stack[sState.stack.length - 1].cid !== node.cid) return; // 이동 중 응답 무시
     sState.drillRows = rows;
     renderSeason();
-    ensureFits(rows, refreshFitViews);
   } catch (e) {
     body.innerHTML = `<div class="empty">조회 실패: ${e.message}</div>`;
   }
@@ -966,56 +841,38 @@ document.querySelectorAll('#seasonTypeChips .chip').forEach(ch => ch.onclick = (
   sState.type = ch.dataset.t;
   renderSeason();
 });
-/* 시즌 탭 정렬 칩: 상승률/적합도는 단일 선택, 연령 칩은 복수 선택(합산 비중순) */
-document.querySelectorAll('#seasonSortChips .chip').forEach(ch => ch.onclick = () => {
-  if (ch.dataset.s) {
-    sState.sortBy = ch.dataset.s;
-    sState.sortAges = [];
-  } else {
-    const g = ch.dataset.g;
-    sState.sortAges = sState.sortAges.includes(g)
-      ? sState.sortAges.filter(x => x !== g)
-      : [...sState.sortAges, g].sort((a,b) => +a - +b);
-    sState.sortBy = sState.sortAges.length ? 'age' : 'lift';
-  }
-  document.querySelectorAll('#seasonSortChips .chip').forEach(x => {
-    if (x.dataset.s) x.classList.toggle('on', sState.sortBy === x.dataset.s);
-    else x.classList.toggle('on', sState.sortAges.includes(x.dataset.g));
-  });
-  renderSeason();
+/* 시즌 탭 기준 연령 칩: 복수 선택, 최소 1개 유지. 선택이 바뀌면 그 연령 기준 전년 데이터를 재조회한다 */
+document.querySelectorAll('#seasonAgeChips .chip').forEach(ch => ch.onclick = () => {
+  const g = ch.dataset.g;
+  const next = sState.selAges.includes(g) ? sState.selAges.filter(x => x !== g) : [...sState.selAges, g];
+  if (!next.length) return; // 최소 1개 연령은 유지
+  sState.selAges = next.sort((a,b) => +a - +b);
+  document.querySelectorAll('#seasonAgeChips .chip').forEach(x => x.classList.toggle('on', sState.selAges.includes(x.dataset.g)));
+  if (sState.stack.length) loadSeasonDrill(); else loadSeason();
 });
 
 function renderSeason() {
-  renderAgeLegend('seasonAgeLegend', activeAgesOf(sState.sortBy, sState.sortAges));
   const body = document.getElementById('seasonBody');
   const src = sState.stack.length ? sState.drillRows : sState.rows;
   if (!src.length) return;
-  const ageSum = r => sState.sortAges.reduce((a,g) => a + (r.ageShares?.[g] ?? 0), 0);
   let rows = src
     .filter(r => sState.stack.length || sState.type === 'all' || r.type === sState.type)
-    .map(r => {
-      // 적합도/연령 구성은 전역 fitCache(베스트 탭과 공유)에서 조회
-      const c = fitCache.get(r.kw + '|' + r.cat.cid);
-      return { ...r, calc: seasonCalc(r), fit: r.fit ?? c?.fit ?? null, ageShares: r.ageShares ?? c?.ageShares ?? null };
-    })
+    .map(r => ({ ...r, calc: seasonCalc(r) }))
     .filter(r => r.calc);
-  if (sState.sortBy === 'lift')     rows.sort((a,b) => (b.calc.lift ?? -999) - (a.calc.lift ?? -999));
-  else if (sState.sortBy === 'fit') rows.sort((a,b) => (b.fit ?? -1) - (a.fit ?? -1));
-  else /* 선택 연령 합산 비중 */    rows.sort((a,b) => (b.ageShares ? ageSum(b) : -1) - (a.ageShares ? ageSum(a) : -1));
+  rows.sort((a,b) => (b.calc.lift ?? -999) - (a.calc.lift ?? -999));
   rows = rows.slice(0, 20);
   if (!rows.length) { body.innerHTML = '<div class="empty">표시할 키워드가 없습니다.</div>'; return; }
 
   const targetMonth = new Date(); targetMonth.setMonth(targetMonth.getMonth() + sState.lead);
   const mLabel = `${targetMonth.getMonth() + 1}월`;
-  const sortLbl = sState.sortBy === 'lift' ? '상승률순' : sState.sortBy === 'fit' ? '적합도순' : `${sState.sortAges.join('·')}대 비중순`;
-  body.innerHTML = `<table class="resp"><thead><tr><th>${sortLbl}</th><th>키워드</th><th>올해 vs 전년 동시즌</th><th>전년 패턴: ${sState.lead}개월 후(${mLabel}) 상승률</th><th>타겟 적합도 · 연령 구성</th><th>전년 시즌 흐름</th><th>편성 판단</th></tr></thead><tbody>` +
+  const ageLbl = `${sState.selAges.join('·')}대`;
+  body.innerHTML = `<table class="resp"><thead><tr><th>상승률순</th><th>키워드</th><th>${ageLbl} 올해 vs 전년 동시즌</th><th>${ageLbl} 전년 패턴: ${sState.lead}개월 후(${mLabel}) 상승률</th><th>전년 시즌 흐름</th><th>편성 판단</th></tr></thead><tbody>` +
     rows.map((r, i) => `
       <tr class="kw-row">
         <td class="rank">${i + 1}</td>
         <td class="cell-kw"><span class="kw-name">${esc(r.kw)}</span><span class="cat-tag">${esc(r.cat.name)}</span>${r.type === 'brand' ? '<span class="kw-type-tag">브랜드</span>' : ''}</td>
-        <td class="cell-half" data-label="올해 vs 전년 동시즌">${growthBadge(r.calc.yoy)}</td>
-        <td class="cell-half" data-label="전년 패턴: ${sState.lead}개월 후(${mLabel})">${growthBadge(r.calc.lift)}</td>
-        <td class="cell-full" data-label="타겟 적합도 · 연령 구성">${fitCell(r, sState.sortBy, sState.sortAges)}</td>
+        <td class="cell-half" data-label="${ageLbl} 올해 vs 전년 동시즌">${growthBadge(r.calc.yoy)}</td>
+        <td class="cell-half" data-label="${ageLbl} 전년 패턴: ${sState.lead}개월 후(${mLabel})">${growthBadge(r.calc.lift)}</td>
         <td class="cell-half" data-label="전년 시즌 흐름"><canvas class="spark" style="width:150px"></canvas></td>
         <td class="cell-half" data-label="편성 판단">${seasonAction(r.calc.lift)}</td>
       </tr>`).join('') + '</tbody></table>';

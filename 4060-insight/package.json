@@ -2,7 +2,7 @@
   "name": "4060-insight-dashboard",
   "version": "1.0.0",
   "private": true,
-  "description": "4060 인사이트 대시보드 (네이버 데이터랩 프록시 + 정적 서빙)",
+  "description": "트렌드 인사이트 대시보드 (네이버 데이터랩 프록시 + 정적 서빙)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
